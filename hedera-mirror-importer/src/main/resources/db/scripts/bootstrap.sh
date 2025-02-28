@@ -994,9 +994,7 @@ completed_jobs=0
 skipped_jobs=0
 
 for file in "${files[@]}"; do
-  local base_file
   base_file=$(basename "$file")
-  local current_status
   current_status=$(read_tracking_status "$file")
   if [[ "$current_status" == "IMPORTED" ]]; then
     log "Skipping already imported file: $base_file"
