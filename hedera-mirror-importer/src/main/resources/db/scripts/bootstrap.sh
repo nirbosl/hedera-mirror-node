@@ -2,8 +2,7 @@
 
 # SPDX-License-Identifier: Apache-2.0
 
-# Start a new process group and detach from terminal
-set -m
+set -m # Start a new process group and detach from terminal
 exec 1>/dev/null 2>>bootstrap.log
 [[ -t 1 ]] && exec </dev/null >&0 2>&0
 
