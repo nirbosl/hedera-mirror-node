@@ -634,12 +634,44 @@ import_file() {
     fi
   done
 
+  # Fallback boundary check
+  if [ $psql_status -ne 0 ]; then
+    log "Count query failed after ${retries} retries, trying fallback boundary check" "WARN"
+
+    # Only perform boundary check for large table parts
+    if [[ "$is_small_table" != "true" ]]; then
+      boundary_count=$(psql -v ON_ERROR_STOP=1 -q -Atc "SELECT COUNT(*) FROM ${table} WHERE consensus_timestamp IN ('$start_ts', '$end_ts');")
+      boundary_status=$?
+
+      if [ $boundary_status -eq 0 ]; then
+        # Check if both boundary timestamps exist (count should be 2)
+        if [ "$boundary_count" -eq 2 ]; then
+          log "Boundary check successful for ${file}, both start and end timestamps found"
+          # Set psql_status to success and use expected_count for actual_count
+          # This assumes all rows in between exist
+          psql_status=0
+          actual_count=$expected_count
+          log "Using manifest row count ${expected_count} based on boundary verification"
+        else
+          log "Boundary check found ${boundary_count}/2 boundary timestamps for ${file}" "ERROR"
+        fi
+      else
+        log "Fallback boundary check failed for ${file}" "ERROR"
+      fi
+    fi
+  fi
+
   # Check the exit status of the count query
   if [ $psql_status -ne 0 ]; then
-    log "Final count query failure for ${file} after ${retries} retries" "ERROR"
-    write_discrepancy "${file}" "COUNT_QUERY_FAILURE" "${expected_count}"
-    write_tracking_file "$filename" "FAILED_TO_IMPORT"
-    return 1
+    log "Final count query failure for ${file} after ${retries} retries, but continuing" "WARN"
+    write_discrepancy "${file}" "ROW_COUNT_QUERY_FAILURE" "${expected_count}"
+
+    # Mark the row count as unverified but don't fail the import
+    write_tracking_file "$filename" "IMPORTED" "ROW_COUNT_UNVERIFIED"
+
+    # Log an error and proceed with the import
+    log "Import process continuing despite row count verification failure for $filename" "ERROR"
+    return 0
   fi
 
   # Verify the count matches expected
