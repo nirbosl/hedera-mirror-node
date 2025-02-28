@@ -397,7 +397,7 @@ process_manifest() {
 
     if [[ -f "$file_path" ]]; then
       # Skip validation if file is already imported successfully
-      if [[ "$(read_tracking_status "$(basename "$file_path")")" == "IMPORTED" ]]; then
+      if [[ "$(read_tracking_status "$file_path")" == "IMPORTED" ]]; then
         continue
       fi
 
@@ -493,10 +493,7 @@ validate_special_files() {
       write_tracking_file "$filename" "FAILED_VALIDATION"
     else
       log "Successfully validated special file: $filename"
-      current_status=$(read_tracking_status "$file")
-      if [[ "$current_status" != "IMPORTED" ]]; then
-        write_tracking_file "$file" "IMPORTED"
-      fi
+      write_tracking_file "$filename" "IMPORTED"
     fi
   done
 
