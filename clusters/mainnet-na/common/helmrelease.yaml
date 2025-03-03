@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-v2.yaml
-      version: '0.123.0'
+      version: '0.124.1'
   driftDetection:
     mode: enabled
     ignore:
@@ -70,9 +70,7 @@ spec:
           replicaExternalLabelName: __replica__
           resources:
             limits:
-              memory: 10752Mi
-            requests:
-              memory: 10752Mi
+              memory: 6Gi
     traefik:
       service:
         annotations:
