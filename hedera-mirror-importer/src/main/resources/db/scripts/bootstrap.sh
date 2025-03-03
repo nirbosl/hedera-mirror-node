@@ -164,21 +164,21 @@ check_required_tools() {
 determine_decompression_tool() {
   if command -v rapidgzip >/dev/null 2>&1; then
     DECOMPRESS_TOOL="rapidgzip"
-    DECOMPRESS_FLAGS="-d -c -P1"
+    DECOMPRESS_FLAGS=(-d -c -P1)
     log "Using rapidgzip for decompression"
     return 0
   fi
 
   if command -v igzip >/dev/null 2>&1; then
     DECOMPRESS_TOOL="igzip"
-    DECOMPRESS_FLAGS="-d -c -T1"
+    DECOMPRESS_FLAGS=(-d -c -T1)
     log "Using igzip for decompression"
     return 0
   fi
 
   if command -v gunzip >/dev/null 2>&1; then
     DECOMPRESS_TOOL="gunzip"
-    DECOMPRESS_FLAGS="-c"
+    DECOMPRESS_FLAGS=(-c)
     log "Using gunzip for decompression"
     return 0
   fi
@@ -588,7 +588,7 @@ import_file() {
 
   # Execute the import within a transaction
   local psql_error
-  if ! psql_error=$($DECOMPRESS_TOOL $DECOMPRESS_FLAGS "$file" 2>/dev/null | PGAPPNAME="bootstrap_$current_pid" \
+  if ! psql_error=$($DECOMPRESS_TOOL "${DECOMPRESS_FLAGS[@]}" "$file" 2>/dev/null | PGAPPNAME="bootstrap_$current_pid" \
     psql -v ON_ERROR_STOP=1 --single-transaction -q -c "COPY $table FROM STDIN WITH CSV HEADER;" 2>&1); then
     if [[ ! -f "$CLEANUP_IN_PROGRESS_FILE" ]]; then
       log "Error importing data for $file: $psql_error" "ERROR"
@@ -622,7 +622,7 @@ import_file() {
     fi
     if [ $i -lt $retries ]; then
       log "Count query attempt $((i+1)) failed for ${file}, retrying in ${delay}s" "WARN"
-      sleep $delay
+      sleep "$delay"
       delay=$((delay * 2))
       if [[ "$is_small_table" == "true" ]]; then
         actual_count=$(psql -v ON_ERROR_STOP=1 -q -Atc "SELECT COUNT(*) FROM ${table};")
@@ -914,7 +914,16 @@ fi
 
 # Decompress schema.sql and MIRRORNODE_VERSION
 for file in "$IMPORT_DIR/schema.sql.gz" "$IMPORT_DIR/MIRRORNODE_VERSION.gz"; do
-  if ! $DECOMPRESS_TOOL ${DECOMPRESS_FLAGS/-c/-k} -f "$file" 2>/dev/null; then
+  # Create a new array with the -c flag replaced with -k
+  decompress_flags_keep=("${DECOMPRESS_FLAGS[@]}")
+  for i in "${!decompress_flags_keep[@]}"; do
+    if [[ "${decompress_flags_keep[$i]}" == "-c" ]]; then
+      decompress_flags_keep[$i]="-k"
+    fi
+  done
+
+  # Add -f flag to the command (as it was in the original)
+  if ! $DECOMPRESS_TOOL "${decompress_flags_keep[@]}" -f "$file" 2>/dev/null; then
     log "Error decompressing $file using $DECOMPRESS_TOOL" "ERROR"
     exit 1
   fi
