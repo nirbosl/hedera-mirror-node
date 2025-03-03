@@ -588,7 +588,7 @@ import_file() {
 
   # Execute the import within a transaction
   local psql_error
-  if ! psql_error=$($DECOMPRESS_TOOL "${DECOMPRESS_FLAGS[@]}" "$file" 2>/dev/null | PGAPPNAME="bootstrap_$current_pid" \
+  if ! psql_error=$("$DECOMPRESS_TOOL" "${DECOMPRESS_FLAGS[@]}" "$file" 2>/dev/null | PGAPPNAME="bootstrap_$current_pid" \
     psql -v ON_ERROR_STOP=1 --single-transaction -q -c "COPY $table FROM STDIN WITH CSV HEADER;" 2>&1); then
     if [[ ! -f "$CLEANUP_IN_PROGRESS_FILE" ]]; then
       log "Error importing data for $file: $psql_error" "ERROR"
@@ -918,12 +918,12 @@ for file in "$IMPORT_DIR/schema.sql.gz" "$IMPORT_DIR/MIRRORNODE_VERSION.gz"; do
   decompress_flags_keep=("${DECOMPRESS_FLAGS[@]}")
   for i in "${!decompress_flags_keep[@]}"; do
     if [[ "${decompress_flags_keep[$i]}" == "-c" ]]; then
-      decompress_flags_keep[$i]="-k"
+      decompress_flags_keep[i]="-k"
     fi
   done
 
   # Add -f flag to the command (as it was in the original)
-  if ! $DECOMPRESS_TOOL "${decompress_flags_keep[@]}" -f "$file" 2>/dev/null; then
+  if ! "$DECOMPRESS_TOOL" "${decompress_flags_keep[@]}" -f "$file" 2>/dev/null; then
     log "Error decompressing $file using $DECOMPRESS_TOOL" "ERROR"
     exit 1
   fi
