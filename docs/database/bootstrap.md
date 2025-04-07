@@ -250,7 +250,7 @@ VERSION="<VERSION_NUMBER>"
 DOWNLOAD_DIR="</path/to/db_export>"
 mkdir -p "$DOWNLOAD_DIR"
 export CLOUDSDK_STORAGE_SLICED_OBJECT_DOWNLOAD_MAX_COMPONENTS=1 && \
-gcloud storage rsync -r -x ".*_atma\.csv\.gz$" "gs://mirrornode-db-export/$VERSION_NUMBER/" "$DOWNLOAD_DIR/"
+gcloud storage rsync -r -x ".*_atma\.csv\.gz$" "gs://mirrornode-db-export/$VERSION/" "$DOWNLOAD_DIR/"
 ```
 
 ##### Download Full DB Data Files
@@ -262,7 +262,7 @@ VERSION="<VERSION_NUMBER>"
 DOWNLOAD_DIR="</path/to/db_export>"
 mkdir -p "$DOWNLOAD_DIR"
 export CLOUDSDK_STORAGE_SLICED_OBJECT_DOWNLOAD_MAX_COMPONENTS=1 && \
-gcloud storage rsync -r "gs://mirrornode-db-export/$VERSION_NUMBER/" "$DOWNLOAD_DIR/"
+gcloud storage rsync -r "gs://mirrornode-db-export/$VERSION/" "$DOWNLOAD_DIR/"
 ```
 
 For both options:
