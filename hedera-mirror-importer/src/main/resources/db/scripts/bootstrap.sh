@@ -96,6 +96,7 @@ enable_pipefail() {
   set -euo pipefail
 }
 
+# shellcheck disable=SC2317
 disable_pipefail() {
   set +euo pipefail
 }
@@ -224,6 +225,7 @@ determine_decompression_tool() {
   return 1
 }
 
+# shellcheck disable=SC2317
 kill_descendants() {
   local pid="$1"
   local children
@@ -234,6 +236,7 @@ kill_descendants() {
   kill -9 "$pid" >/dev/null 2>&1
 }
 
+# shellcheck disable=SC2317
 cleanup() {
   disable_pipefail
   local trap_type="$1"
@@ -388,6 +391,7 @@ source_bootstrap_env() {
   if [[ -f "$BOOTSTRAP_ENV_FILE" ]]; then
     log "Sourcing $BOOTSTRAP_ENV_FILE to set environment variables."
     set -a
+    # shellcheck disable=SC1090
     source "$BOOTSTRAP_ENV_FILE"
     set +a
   else
@@ -423,7 +427,8 @@ load_manifest_to_db() {
     return 1
   }
 
-  local insert_sql_file=$(mktemp)
+  local insert_sql_file
+  insert_sql_file=$(mktemp)
   echo "BEGIN;" > "$insert_sql_file"
 
   local filename count status
@@ -643,7 +648,6 @@ validate_special_files() {
 
 retry_query() {
   local query="$1"
-  local description="$2"
   local retries=3
   local delay=2
   local result
@@ -669,14 +673,16 @@ retry_query() {
 
 get_partition_timestamps() {
   local filename="$1"
-  local basename_file=$(basename "$filename")
+  local basename_file
+  basename_file=$(basename "$filename")
 
   if [[ "$basename_file" =~ _p([0-9]{4})_([0-9]{2})\.csv\.gz$ ]]; then
     local year="${BASH_REMATCH[1]}"
     local month="${BASH_REMATCH[2]}"
 
     # Calculate start timestamp (first day of month) as nanoseconds
-    local start_ts=$(psql -v ON_ERROR_STOP=1 -q -Atc "SELECT (EXTRACT(EPOCH FROM TIMESTAMP '${year}-${month}-01 00:00:00.000000000') * 1000000000)::bigint;")
+    local start_ts
+    start_ts=$(psql -v ON_ERROR_STOP=1 -q -Atc "SELECT (EXTRACT(EPOCH FROM TIMESTAMP '${year}-${month}-01 00:00:00.000000000') * 1000000000)::bigint;")
 
     # Calculate end timestamp (last day of the month)
     local end_day
@@ -695,7 +701,8 @@ get_partition_timestamps() {
     fi
 
     # Calculate end timestamp (last day of month, end of day) as nanoseconds
-    local end_ts=$(psql -v ON_ERROR_STOP=1 -q -Atc "SELECT (EXTRACT(EPOCH FROM TIMESTAMP '${year}-${month}-${end_day} 23:59:59.999999999') * 1000000000)::bigint;")
+    local end_ts
+    end_ts=$(psql -v ON_ERROR_STOP=1 -q -Atc "SELECT (EXTRACT(EPOCH FROM TIMESTAMP '${year}-${month}-${end_day} 23:59:59.999999999') * 1000000000)::bigint;")
 
     if [[ -n "$start_ts" && -n "$end_ts" ]]; then
       echo "${start_ts}:${end_ts}:${year}:${month}"
@@ -732,7 +739,8 @@ import_file() {
   local table
   local absolute_file
   local is_partitioned
-  local file=$(basename "$filename")
+  local file
+  file=$(basename "$filename")
   local relative_path
   local current_pid=$BASHPID
 
@@ -814,17 +822,23 @@ import_file() {
   write_tracking_file "$filename" "IN_PROGRESS"
 
 
-  local stdout_file=$(mktemp)
-  local stderr_file=$(mktemp)
-  local decomp_err_file=$(mktemp)
+  local stdout_file
+  stdout_file=$(mktemp)
+  local stderr_file
+  stderr_file=$(mktemp)
+  local decomp_err_file
+  decomp_err_file=$(mktemp)
 
   # Create a named pipe for data transfer
-  local csv_fifo=$(mktemp -u)
+  local csv_fifo
+  csv_fifo=$(mktemp -u)
   mkfifo "$csv_fifo"
   log "Created named pipe for data transfer: $csv_fifo" "DEBUG"
 
-  local row_counter=$(mktemp)
-  local csv_header=$("$DECOMPRESS_TOOL" "${DECOMPRESS_FLAGS[@]}" "$absolute_file" | python3 -c 'import sys; print(next(sys.stdin, "").rstrip("\r\n"))')
+  local row_counter
+  row_counter=$(mktemp)
+  local csv_header
+  csv_header=$("$DECOMPRESS_TOOL" "${DECOMPRESS_FLAGS[@]}" "$absolute_file" | python3 -c 'import sys; print(next(sys.stdin, "").rstrip("\r\n"))')
 
   if [[ -z "$csv_header" ]]; then
     log "Could not read header from $file" "ERROR"
@@ -834,7 +848,8 @@ import_file() {
   fi
 
   # Safely generate column list from CSV header using Python
-  local columns=$(python3 -c "
+  local columns
+  columns=$(python3 -c "
 import sys
 
 try:
@@ -857,11 +872,15 @@ except Exception as e:
 
   log "Using $file column list from CSV header: $columns" "DEBUG"
 
-  local db_columns=$(psql -t -c "SELECT STRING_AGG(column_name, ',' ORDER BY ordinal_position) FROM information_schema.columns WHERE table_name = '$table' AND table_schema = 'public'")
+  local db_columns
+  db_columns=$(psql -t -c "SELECT STRING_AGG(column_name, ',' ORDER BY ordinal_position) FROM information_schema.columns WHERE table_name = '$table' AND table_schema = 'public'")
   db_columns=$(echo "$db_columns" | tr -d ' ')
 
-  local csv_column_count=$(echo "$csv_header" | tr ',' '\n' | wc -l)
-  local db_column_count=$(echo "$db_columns" | awk -F, '{print NF}')
+
+  local csv_column_count
+  csv_column_count=$(echo "$csv_header" | tr ',' '\n' | wc -l)
+  local db_column_count
+  db_column_count=$(echo "$db_columns" | awk -F, '{print NF}')
 
   if [[ "$csv_column_count" != "$db_column_count" ]]; then
     log "Column count mismatch for $table: CSV has $csv_column_count columns, DB table has $db_column_count columns. Using CSV header for mapping." "WARN"
@@ -917,7 +936,8 @@ except Exception as e:
       wait
   fi
 
-  local total_lines=$(cat "$row_counter")
+  local total_lines
+  total_lines=$(cat "$row_counter")
   local import_pipe_row_count=$((total_lines - 1))
   log "Import pipeline row count for $file: $import_pipe_row_count (total lines including header: $total_lines)" "DEBUG"
 
@@ -986,7 +1006,8 @@ except Exception as e:
   log "Starting DB row count verification query for $file..." "DEBUG"
   if [[ "$is_partitioned" == "true" ]]; then
     # For partitioned tables, extract time range from filename
-    local timestamp_info=$(get_partition_timestamps "$filename")
+    local timestamp_info
+    timestamp_info=$(get_partition_timestamps "$filename")
 
     if [[ -n "$timestamp_info" ]]; then
       IFS=':' read -r start_ts end_ts year month <<< "$timestamp_info"
@@ -1201,7 +1222,8 @@ monitor_progress() {
       break
     fi
 
-    local current_timestamp=$(date +%s)
+    local current_timestamp
+    current_timestamp=$(date +%s)
 
     declare -A prev_counts
     declare -A prev_times
@@ -1232,8 +1254,10 @@ monitor_progress() {
       fi
     fi
 
-    local stderr_file=$(mktemp)
-    local temp_data=$(mktemp)
+    local stderr_file
+    stderr_file=$(mktemp)
+    local temp_data
+    temp_data=$(mktemp)
 
     psql -X -q -v ON_ERROR_STOP=1 <<EOF > "$temp_data" 2>"$stderr_file"
 \\pset format unaligned
@@ -1283,7 +1307,8 @@ EOF
       printf "%-32s %-18s %-16s %-15s %-15s\n" "Filename" "Rows_Processed" "Total_Rows" "Percentage" "Rate(rows/s)"
       printf "%-32s %-18s %-16s %-15s %-15s\n" "$(printf -- '-%.0s' {1..32})" "$(printf -- '-%.0s' {1..18})" "$(printf -- '-%.0s' {1..16})" "$(printf -- '-%.0s' {1..15})" "$(printf -- '-%.0s' {1..15})"
 
-      local new_state=$(mktemp)
+      local new_state
+      new_state=$(mktemp)
 
       while IFS='|' read -r filename tuples_processed expected_count; do
         if [[ -z "$filename" ]]; then
@@ -1291,8 +1316,10 @@ EOF
         fi
 
         # Format numbers with commas
-        local formatted_processed=$(printf "%'d" "$tuples_processed")
-        local formatted_expected=$(printf "%'d" "$expected_count")
+        local formatted_processed
+        formatted_processed=$(printf "%'d" "$tuples_processed")
+        local formatted_expected
+        formatted_expected=$(printf "%'d" "$expected_count")
 
         # Calculate percentage
         local percentage="0%"
