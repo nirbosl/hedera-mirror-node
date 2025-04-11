@@ -21,11 +21,11 @@ if [[ -f "$PID_FILE" ]]; then
   if [[ -n "$old_pid" && "$old_pid" =~ ^[0-9]+$ ]]; then
     if ps -p "$old_pid" -o comm= | grep -q -E "^(bash|sh|$script_name|${script_name%.sh})$"; then
       if [[ -f "/proc/$old_pid/cmdline" ]] && grep -q "$script_name" "/proc/$old_pid/cmdline"; then
-         echo "[ERROR] Another instance of $script_name is already running with PID: $old_pid. Exiting." >&9
-         exit 1
+        echo "[ERROR] Another instance of $script_name is already running with PID: $old_pid. Exiting." >&9
+        exit 1
       else
-         echo "[WARN] Stale PID file found ($PID_FILE) for PID $old_pid, but it's not a $script_name process. Removing stale file." >&9
-         rm -f "$PID_FILE"
+        echo "[WARN] Stale PID file found ($PID_FILE) for PID $old_pid, but it's not a $script_name process. Removing stale file." >&9
+        rm -f "$PID_FILE"
       fi
     else
       echo "[WARN] Stale PID file found ($PID_FILE) for non-existent process PID $old_pid. Removing stale file." >&9
@@ -57,7 +57,7 @@ DISCREPANCY_FILE="bootstrap_discrepancies.log"
 DISCREPANCY_FILE_LOCK="$DISCREPANCY_FILE.lock"
 PROGRESS_FILE="bootstrap_progress.log"
 PROGRESS_INTERVAL=${PROGRESS_INTERVAL:-10}
-PROGRESS_DB_TABLE="bootstrap_manifest_progress" 
+PROGRESS_DB_TABLE="bootstrap_manifest_progress"
 export MONITOR_STATE_FILE="/tmp/bootstrap_monitor_state.txt"
 MONITOR_STOP_SIGNAL_FILE="/tmp/bootstrap_monitor.stop"
 
@@ -106,7 +106,7 @@ export -f enable_pipefail disable_pipefail
 with_lock() {
   local lockfile="$1"
   local cmd="$2"
-  
+
   (
     flock -x 200
     eval "$cmd"
@@ -132,7 +132,7 @@ log() {
   local timestamp
   timestamp=$(date -u '+%Y-%b-%d %H:%M:%S')
   local log_cmd="echo \"[$timestamp] [$level] $msg\" >> \"$LOG_FILE\""
-  
+
   with_lock "$LOG_FILE_LOCK" "$log_cmd"
 }
 
@@ -238,7 +238,7 @@ kill_descendants() {
 cleanup() {
   disable_pipefail
   local trap_type="$1"
-  
+
   log "Cleanup function triggered with trap type: $trap_type"
 
   if [[ -f "$LOCK_FILE" ]]; then
@@ -377,7 +377,7 @@ find_full_path() {
   local basename_file="$1"
   local result
   result=$(find "$IMPORT_DIR" -type f -name "$basename_file" | head -1)
-  
+
   echo "$result"
 }
 
@@ -404,8 +404,8 @@ load_manifest_to_db() {
   log "Loading manifest counts into temporary DB table ${PROGRESS_DB_TABLE}..."
 
   if [[ "$PGUSER" != "mirror_node" || "$PGDATABASE" != "mirror_node" ]]; then
-     log "load_manifest_to_db must run as mirror_node user in mirror_node DB. Current: $PGUSER@$PGDATABASE" "ERROR"
-     return 1
+    log "load_manifest_to_db must run as mirror_node user in mirror_node DB. Current: $PGUSER@$PGDATABASE" "ERROR"
+    return 1
   fi
 
   psql -v ON_ERROR_STOP=1 -q -c "DROP TABLE IF EXISTS ${PROGRESS_DB_TABLE};" || {
@@ -426,15 +426,15 @@ load_manifest_to_db() {
 
   local insert_sql_file=$(mktemp)
   echo "BEGIN;" > "$insert_sql_file"
-  
+
   local filename count status
   local inserted_count=0
   log "Filtering manifest entries for non-IMPORTED files..." "DEBUG"
   for filename in "${!manifest_counts[@]}"; do
     count="${manifest_counts[$filename]}"
-    
+
     status=$(read_tracking_status "$filename")
-    
+
     if [[ "$status" != "IMPORTED" && "$count" =~ ^[0-9]+$ ]]; then
       safe_filename=$(echo "$filename" | sed "s/'/''/g")
       echo "INSERT INTO ${PROGRESS_DB_TABLE} (filename, expected_count) VALUES ('${safe_filename}', ${count});" >> "$insert_sql_file"
@@ -443,35 +443,35 @@ load_manifest_to_db() {
       log "Skipping manifest entry for $filename (status: $status, count: $count)" "DEBUG"
     fi
   done
-  
+
   echo "COMMIT;" >> "$insert_sql_file"
-  
+
   if ! psql -v ON_ERROR_STOP=1 -q -f "$insert_sql_file"; then
     log "Failed to load data into ${PROGRESS_DB_TABLE} table via INSERT statements." "ERROR"
     psql -q -c "DROP TABLE IF EXISTS ${PROGRESS_DB_TABLE};" >/dev/null 2>&1
     rm -f "$insert_sql_file"
     return 1
   fi
-  
+
   rm -f "$insert_sql_file"
-  
+
   log "Successfully loaded ${inserted_count} manifest entries into ${PROGRESS_DB_TABLE}."
-  
+
   local table_exists
   table_exists=$(psql -X -q -t -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '${PROGRESS_DB_TABLE}');" | tr -d ' ')
   log "After load_manifest_to_db, table exists: $table_exists" "DEBUG"
-  
+
   if [[ "$table_exists" == "t" ]]; then
     local row_count
     row_count=$(psql -X -q -t -c "SELECT COUNT(*) FROM ${PROGRESS_DB_TABLE};" | tr -d ' ')
     log "Table ${PROGRESS_DB_TABLE} has ${row_count} rows" "DEBUG"
-    
+
     if [[ "$row_count" -gt 0 ]]; then
       log "Sample row from ${PROGRESS_DB_TABLE}:" "DEBUG"
       psql -X -q -t -c "SELECT * FROM ${PROGRESS_DB_TABLE} LIMIT 1;" || log "Failed to retrieve sample row" "DEBUG"
     fi
   fi
-  
+
   return 0
 }
 
@@ -564,9 +564,9 @@ process_manifest() {
 get_table_name_from_filename() {
   local filename="$1"
   local basename_file
-  
+
   basename_file=$(basename "$filename")
-  
+
   if [[ "$basename_file" =~ _p[0-9]{4}_[0-9]{2}\.csv\.gz$ ]]; then
     echo "${basename_file%_p*}"
   else
@@ -650,15 +650,15 @@ retry_query() {
   local result
   local status
   local current_pid=$BASHPID
-  
+
   result=$(PGAPPNAME="bootstrap_$current_pid" psql -v ON_ERROR_STOP=1 -q -Atc "$query")
   status=$?
-  
+
   for ((i=1; i<retries; i++)); do
     if [ $status -eq 0 ]; then
       break
     fi
-    
+
     sleep "$delay"
     delay=$((delay * 2))
     result=$(PGAPPNAME="bootstrap_$current_pid" psql -v ON_ERROR_STOP=1 -q -Atc "$query")
@@ -671,14 +671,14 @@ retry_query() {
 get_partition_timestamps() {
   local filename="$1"
   local basename_file=$(basename "$filename")
-  
+
   if [[ "$basename_file" =~ _p([0-9]{4})_([0-9]{2})\.csv\.gz$ ]]; then
     local year="${BASH_REMATCH[1]}"
     local month="${BASH_REMATCH[2]}"
-    
+
     # Calculate start timestamp (first day of month) as nanoseconds
     local start_ts=$(psql -v ON_ERROR_STOP=1 -q -Atc "SELECT (EXTRACT(EPOCH FROM TIMESTAMP '${year}-${month}-01 00:00:00.000000000') * 1000000000)::bigint;")
-    
+
     # Calculate end timestamp (last day of the month)
     local end_day
     if [[ "$month" == "02" ]]; then
@@ -694,10 +694,10 @@ get_partition_timestamps() {
     else
       end_day=31
     fi
-    
+
     # Calculate end timestamp (last day of month, end of day) as nanoseconds
     local end_ts=$(psql -v ON_ERROR_STOP=1 -q -Atc "SELECT (EXTRACT(EPOCH FROM TIMESTAMP '${year}-${month}-${end_day} 23:59:59.999999999') * 1000000000)::bigint;")
-    
+
     if [[ -n "$start_ts" && -n "$end_ts" ]]; then
       echo "${start_ts}:${end_ts}:${year}:${month}"
     fi
@@ -706,7 +706,7 @@ get_partition_timestamps() {
 
 verify_postgres_connection() {
   log "Verifying PostgreSQL connection..."
-  
+
   if ! psql -c "SELECT version();" > /dev/null 2>&1; then
     log "Failed to connect to PostgreSQL database!" "ERROR"
     log "Connection details: host=$PGHOST port=$PGPORT dbname=$PGDATABASE user=$PGUSER" "ERROR"
@@ -725,7 +725,7 @@ import_file() {
   if [[ -f "$CLEANUP_IN_PROGRESS_FILE" ]]; then
     return 1
   fi
-  
+
   enable_pipefail
   trap 'disable_pipefail' RETURN
 
@@ -767,9 +767,9 @@ import_file() {
   else
     relative_path="$file"
   fi
-  
+
   expected_count="${manifest_counts[$relative_path]}"
-  
+
   # Perform BLAKE3 and file-size validations
   local validation_result
   if ! validation_result=$(validate_file "$absolute_file" "$relative_path"); then
@@ -814,7 +814,7 @@ import_file() {
   log "Importing into table $table from $filename, PID: $current_pid"
   write_tracking_file "$filename" "IN_PROGRESS"
 
-  
+
   local stdout_file=$(mktemp)
   local stderr_file=$(mktemp)
   local decomp_err_file=$(mktemp)
@@ -826,14 +826,14 @@ import_file() {
 
   local row_counter=$(mktemp)
   local csv_header=$("$DECOMPRESS_TOOL" "${DECOMPRESS_FLAGS[@]}" "$absolute_file" | python3 -c 'import sys; print(next(sys.stdin, "").rstrip("\r\n"))')
-  
+
   if [[ -z "$csv_header" ]]; then
     log "Could not read header from $file" "ERROR"
     write_tracking_file "$filename" "FAILED_TO_IMPORT"
     ((failed_imports++))
     return 1
   fi
-  
+
   # Safely generate column list from CSV header using Python
   local columns=$(python3 -c "
 import sys
@@ -848,22 +848,22 @@ except Exception as e:
     print(f'Error: {str(e)}', file=sys.stderr)
     sys.exit(1)
 ")
-  
+
   if [[ $? -ne 0 || -z "$columns" ]]; then
     log "Failed to generate column list from CSV header" "ERROR"
     write_tracking_file "$filename" "FAILED_TO_IMPORT"
     ((failed_imports++))
     return 1
   fi
-  
+
   log "Using $file column list from CSV header: $columns" "DEBUG"
-  
+
   local db_columns=$(psql -t -c "SELECT STRING_AGG(column_name, ',' ORDER BY ordinal_position) FROM information_schema.columns WHERE table_name = '$table' AND table_schema = 'public'")
   db_columns=$(echo "$db_columns" | tr -d ' ')
-  
+
   local csv_column_count=$(echo "$csv_header" | tr ',' '\n' | wc -l)
   local db_column_count=$(echo "$db_columns" | awk -F, '{print NF}')
-  
+
   if [[ "$csv_column_count" != "$db_column_count" ]]; then
     log "Column count mismatch for $table: CSV has $csv_column_count columns, DB table has $db_column_count columns. Using CSV header for mapping." "WARN"
   else
@@ -954,7 +954,7 @@ except Exception as e:
     if grep -q "does not exist" "$stderr_file" 2>/dev/null; then
       log "Table or column does not exist. Check if the table schema matches the CSV header." "ERROR"
     elif grep -q "invalid input syntax" "$stderr_file" 2>/dev/null; then
-      log "Invalid input syntax detected. Data may not match column types." "ERROR" 
+      log "Invalid input syntax detected. Data may not match column types." "ERROR"
     elif grep -q "violates" "$stderr_file" 2>/dev/null; then
       log "Constraint violation detected. Data may violate table constraints." "ERROR"
     fi
@@ -988,7 +988,7 @@ except Exception as e:
   if [[ "$is_partitioned" == "true" ]]; then
     # For partitioned tables, extract time range from filename
     local timestamp_info=$(get_partition_timestamps "$filename")
-    
+
     if [[ -n "$timestamp_info" ]]; then
       IFS=':' read -r start_ts end_ts year month <<< "$timestamp_info"
       query_result=$(retry_query "SELECT COUNT(*) FROM ${table} WHERE ${timestamp_column} BETWEEN ${start_ts} AND ${end_ts};" "Timestamp-based count query for ${file}")
@@ -1049,7 +1049,7 @@ except Exception as e:
   else
     log "Skipping boundary check: is_partitioned=${is_partitioned}, timestamp_info=${timestamp_info}" "WARN"
   fi
-    
+
   # If boundary check failed, try a simple EXISTS check as a last resort
   log "Final count query failure for ${file}, attempting existence check as a last resort..." "WARN"
 
@@ -1180,10 +1180,10 @@ monitor_progress() {
   export PGHOST="$p_host"
   export PGPORT="$p_port"
   export PGPASSWORD="$p_password"
-  
+
   # Set locale for proper number formatting with thousands separators
   export LC_NUMERIC="en_US.UTF-8"
-  
+
   sleep 5
   log "Starting progress monitor (Interval: ${PROGRESS_INTERVAL}s, Output: ${PROGRESS_FILE})"
 
@@ -1193,7 +1193,6 @@ monitor_progress() {
     echo -e "initialization\t0\t$(date +%s)" > "$MONITOR_STATE_FILE"
   fi
 
-  # Ensure signal file does not exist at start
   rm -f "$MONITOR_STOP_SIGNAL_FILE"
 
   while true; do
@@ -1204,7 +1203,7 @@ monitor_progress() {
     fi
 
     local current_timestamp=$(date +%s)
-    
+
     declare -A prev_counts
     declare -A prev_times
     if [[ -f "$MONITOR_STATE_FILE" && -s "$MONITOR_STATE_FILE" ]]; then
@@ -1213,13 +1212,13 @@ monitor_progress() {
         prev_times["$filename"]=$prev_time
       done < "$MONITOR_STATE_FILE"
     fi
-    
+
     local table_check
     table_check=$(psql -X -q -t -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '${PROGRESS_DB_TABLE}');" | tr -d ' ')
-    
+
     if [[ "$table_check" != "t" ]]; then
       log "Progress table ${PROGRESS_DB_TABLE} does not exist, creating an empty version" "WARN"
-      
+
       # Create a basic version of the table so the query doesn't fail
       if ! psql -v ON_ERROR_STOP=1 -q -c """
       CREATE UNLOGGED TABLE IF NOT EXISTS ${PROGRESS_DB_TABLE} (
@@ -1233,10 +1232,10 @@ monitor_progress() {
         continue
       fi
     fi
-    
+
     local stderr_file=$(mktemp)
     local temp_data=$(mktemp)
-    
+
     psql -X -q -v ON_ERROR_STOP=1 <<EOF > "$temp_data" 2>"$stderr_file"
 \\pset format unaligned
 \\pset fieldsep '|'
@@ -1244,7 +1243,7 @@ monitor_progress() {
 \\pset footer off
 
 WITH app_names AS (
-  SELECT 
+  SELECT
     a.pid,
     application_name,
     substring(application_name from '^bootstrap_copy_(.*)$') AS filename,
@@ -1254,86 +1253,86 @@ WITH app_names AS (
   WHERE a.state = 'active'
   AND a.application_name LIKE 'bootstrap_copy_%'
 )
-SELECT 
+SELECT
   app.filename,
   app.tuples_processed,
   COALESCE(m.expected_count, 0) as expected_count
 FROM app_names app
-LEFT JOIN ${PROGRESS_DB_TABLE} m ON 
+LEFT JOIN ${PROGRESS_DB_TABLE} m ON
   app.filename = SPLIT_PART(m.filename, '/', array_length(string_to_array(m.filename, '/'), 1))
 ORDER BY app.filename;
 EOF
 
     local psql_status=$?
-    
+
     if [[ $psql_status -ne 0 ]]; then
       log "Progress monitor query failed with status: $psql_status" "ERROR"
-      
+
       if [[ -s "$stderr_file" ]]; then
         log "PostgreSQL query error: $(cat "$stderr_file")" "ERROR"
       fi
-      
+
       echo "ERROR: Progress monitoring query failed, progress monitor will not be displayed" > "$PROGRESS_FILE"
-      
+
       rm -f "$temp_data"
-      rm -f "$stderr_file" 
+      rm -f "$stderr_file"
       sleep "$PROGRESS_INTERVAL"
       continue
     fi
-    
+
     {
       printf "%-32s %-18s %-16s %-15s %-15s\n" "Filename" "Rows_Processed" "Total_Rows" "Percentage" "Rate(rows/s)"
       printf "%-32s %-18s %-16s %-15s %-15s\n" "$(printf -- '-%.0s' {1..32})" "$(printf -- '-%.0s' {1..18})" "$(printf -- '-%.0s' {1..16})" "$(printf -- '-%.0s' {1..15})" "$(printf -- '-%.0s' {1..15})"
-      
+
       local new_state=$(mktemp)
-      
+
       while IFS='|' read -r filename tuples_processed expected_count; do
         if [[ -z "$filename" ]]; then
           continue
         fi
-        
+
         # Format numbers with commas
         local formatted_processed=$(printf "%'d" "$tuples_processed")
         local formatted_expected=$(printf "%'d" "$expected_count")
-        
+
         # Calculate percentage
         local percentage="0%"
         if [[ $expected_count -gt 0 ]]; then
           percentage=$(printf "%.2f%%" "$(echo "scale=4; $tuples_processed * 100 / $expected_count" | bc)")
         fi
-        
+
         # Calculate rate per second
         local rate="calculating..."
         basename_filename=$(basename "$filename" 2>/dev/null || echo "$filename")
-        
+
         if [[ -n "${prev_counts[$basename_filename]}" && -n "${prev_times[$basename_filename]}" ]]; then
           local prev_count="${prev_counts[$basename_filename]}"
           local prev_time="${prev_times[$basename_filename]}"
-          
-          if [[ $current_timestamp -gt $prev_time && 
-                $(( tuples_processed - prev_count )) -ge 0 && 
+
+          if [[ $current_timestamp -gt $prev_time &&
+                $(( tuples_processed - prev_count )) -ge 0 &&
                 $(( current_timestamp - prev_time )) -gt 0 ]]; then
             local diff_rows=$(( tuples_processed - prev_count ))
             local diff_time=$(( current_timestamp - prev_time ))
             rate=$(printf "%'d" "$(( diff_rows / diff_time ))")
           fi
         fi
-        
+
         echo -e "$basename_filename\t$tuples_processed\t$current_timestamp" >> "$new_state"
-        
+
         # All columns left-aligned with increased spacing
         printf "%-32s %-18s %-16s %-15s %-15s\n" \
           "$filename" "$formatted_processed" "$formatted_expected" "$percentage" "$rate"
       done < "$temp_data"
-      
+
     } > "$PROGRESS_FILE"
-    
+
     if [[ -s "$new_state" ]]; then
       mv "$new_state" "$MONITOR_STATE_FILE"
     else
       rm -f "$new_state"
     fi
-    
+
     rm -f "$temp_data"
     rm -f "$stderr_file"
 
@@ -1650,7 +1649,7 @@ for pid in "${import_pids[@]}"; do
     # If it was marked IN_PROGRESS, assume success and update. import_file handles explicit failures.
     if [[ "$current_status" == "IN_PROGRESS" ]]; then
         log "Updating status for already finished process $pid (File: $base_file) from IN_PROGRESS to IMPORTED." "DEBUG"
-	write_tracking_file "$base_file" "IMPORTED"
+        write_tracking_file "$base_file" "IMPORTED"
         ((completed_jobs++))
     elif [[ "$current_status" == "IMPORTED" ]]; then
          log "Status for already finished process $pid (File: $base_file) is already IMPORTED." "DEBUG"

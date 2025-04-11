@@ -255,6 +255,9 @@ gcloud storage rsync -r -x ".*_atma\.csv\.gz$" "gs://mirrornode-db-export/$VERSI
 
 ##### Download Full DB Data Files
 
+> [!WARNING]
+> Bootstrap of a full database export is currently **not supported** by the `bootstrap.sh` script in this version. Support for full database bootstrap will be added in the near future. The instructions below are for informational purposes only. For full-db support, you may use the previous version by checking out the following branch: `git checkout release/0.127`. The previous version is compatible only with the data files of the `0.113.2` export in the GCS bucket.
+
 Create a directory and download all files and subdirectories for the selected version:
 
 ```bash
@@ -316,6 +319,9 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
 
    For a full database import:
 
+   > [!WARNING]
+   > The `--full` option for a full database import is currently **not supported** in this version of the `bootstrap.sh` script. Using this flag will result in errors and a failed database bootstrap.
+
    ```bash
    setsid ./bootstrap.sh 8 --full /path/to/db_export 2>> bootstrap.log
    ```
@@ -358,20 +364,20 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
   ```bash
   tail -f bootstrap.log
   ```
-  
+
   - The script logs all activity to `bootstrap.log`.
   - Note that the script processes files in parallel and asynchronously. Activities are logged as they occur, so log entries may appear in an arbitrary order.
 
 - **Check the Progress Log File:**
 
   - To continuously view the latest progress with automatic screen refreshing, use the following `watch` command:
-  
+
   ```bash
   watch --color -n .1 "cat bootstrap_progress.log | tail -n $(($(tput lines) - 2))"
   ```
-  
+
   - This command uses `watch` to re-run the `cat | tail` command every 0.1 seconds. `$(($(tput lines) - 2))` calculates the number of lines in your current terminal and subtracts 2, and `tail -n` uses this value to display the most recent log lines that fit your screen height.
-  
+
   - This file provides a real-time, formatted view of active import jobs. It typically updates every `$PROGRESS_INTERVAL` seconds (default: 10 seconds, configurable in `bootstrap.env`).
   - Columns include:
     - `Filename`: The data file being imported.
@@ -427,10 +433,13 @@ If you need to stop the script before it completes:
 
 - **Re-run the Bootstrap Script:**
 
+  > [!WARNING]
+  > The `--full` option for resuming a full database import is currently **not supported** in this version.
+
   ```bash
   # Minimal DB
   setsid ./bootstrap.sh 8 /path/to/db_export 2>> bootstrap.log
-  
+
   # Full DB
   setsid ./bootstrap.sh 8 --full /path/to/db_export 2>> bootstrap.log
   ```
