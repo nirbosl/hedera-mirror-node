@@ -89,13 +89,13 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
 
    Thread counts for certain parallel operations can be configured via environment variables before running the script. If not set, defaults will be used.
 
-   **Important:** These thread counts apply *per parallel import job* launched by the main script, not globally for the entire script. For example, if `MAX_JOBS` allows 4 concurrent import jobs and `B3SUM_THREADS` is set to 2, up to 8 threads could be used for hashing simultaneously across those jobs.
+   **Important:** These thread counts apply _per parallel import job_ launched by the main script, not globally for the entire script. For example, if `MAX_JOBS` allows 4 concurrent import jobs and `B3SUM_THREADS` is set to 2, up to 8 threads could be used for hashing simultaneously across those jobs.
 
    - `export B3SUM_THREADS=N` (Default: 2) - Number of threads for `b3sum` hash calculation.
-   - `export RAPIDGZIP_THREADS=N` (Default: 2) - Number of threads used *only if* `rapidgzip` is installed and selected by the script for decompression.
-   - `export IGZIP_THREADS=N` (Default: 2) - Number of threads used *only if* `igzip` is installed and selected by the script for decompression.
+   - `export RAPIDGZIP_THREADS=N` (Default: 2) - Number of threads used _only if_ `rapidgzip` is installed and selected by the script for decompression.
+   - `export IGZIP_THREADS=N` (Default: 2) - Number of threads used _only if_ `igzip` is installed and selected by the script for decompression.
 
-   **Note:** The default `gunzip` decompressor is single-threaded and is not affected by these environment variables. When setting these values, be mindful of the CPU resources on the machine *running the script*. Setting thread counts too high relative to available cores can lead to CPU overcontention and potentially slow down the overall process rather than speeding it up.
+   **Note:** The default `gunzip` decompressor is single-threaded and is not affected by these environment variables. When setting these values, be mindful of the CPU resources on the machine _running the script_. Setting thread counts too high relative to available cores can lead to CPU overcontention and potentially slow down the overall process rather than speeding it up.
 
 4. Install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install), then authenticate:
 
@@ -182,10 +182,10 @@ Edit the `bootstrap.env` file to set your own credentials and passwords for data
   ```
 
   - `PROGRESS_INTERVAL`: How often (in seconds) the progress monitor updates `bootstrap_progress.log` (Default: 10).
-  - `IGZIP_THREADS`: Number of threads used *only if* `igzip` is installed and selected for decompression (Default: 2).
-  - `RAPIDGZIP_THREADS`: Number of threads used *only if* `rapidgzip` is installed and selected for decompression (Default: 2).
+  - `IGZIP_THREADS`: Number of threads used _only if_ `igzip` is installed and selected for decompression (Default: 2).
+  - `RAPIDGZIP_THREADS`: Number of threads used _only if_ `rapidgzip` is installed and selected for decompression (Default: 2).
   - `B3SUM_THREADS`: Number of threads for `b3sum` hash calculation (Default: 2).
-  - **Note:** The thread counts apply *per parallel import job*. Be mindful of the CPU resources on the machine *running the script* to avoid overcontention.
+  - **Note:** The thread counts apply _per parallel import job_. Be mindful of the CPU resources on the machine _running the script_ to avoid overcontention.
 
 - **Save and Secure the `bootstrap.env` File:**
 
@@ -325,6 +325,7 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
    ```bash
    setsid ./bootstrap.sh 8 --full /path/to/db_export 2>> bootstrap.log
    ```
+
    - The script handles logging internally to `bootstrap.log`, and the execution command will also append stderr to the log file
    - `8` refers to the number of CPU cores to use for parallel processing. Adjust this number based on your system's resources.
    - `/path/to/db_export` is the directory where you downloaded the database export data.
@@ -491,7 +492,7 @@ token_balance_p2024_01.csv.gz IMPORTED HASH_VERIFIED
 ## Troubleshooting
 
 - **Connection Errors:**
-  - Confirm that `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` in `bootstrap.env` are correctly set for the *initial connection* (usually as `postgres` user to the `postgres` database). The script switches credentials internally after initialization.
+  - Confirm that `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` in `bootstrap.env` are correctly set for the _initial connection_ (usually as `postgres` user to the `postgres` database). The script switches credentials internally after initialization.
   - Ensure that the database server allows connections from your client machine (check `pg_hba.conf` and firewall rules).
   - Verify that the database port (`PGPORT`) is correct and accessible.
 - **Import Failures:**

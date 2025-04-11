@@ -2,7 +2,6 @@
 
 # SPDX-License-Identifier: Apache-2.0
 
-# Save original stderr destination to FD 9 before any redirections
 exec 9>&2
 
 set -m # Start a new process group and detach from terminal
