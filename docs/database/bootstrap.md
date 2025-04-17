@@ -91,8 +91,8 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
 
    **Important:** These thread counts apply _per parallel import job_ launched by the main script, not globally for the entire script. For example, if `MAX_JOBS` allows 4 concurrent import jobs and `B3SUM_THREADS` is set to 2, up to 8 threads could be used for hashing simultaneously across those jobs.
 
-   - `export B3SUM_THREADS=N`        (Default: 2) - Number of threads for `b3sum` hash calculation.
-   - `export DECOMPRESSOR_THREADS=N` (Default: 2) - Number of threads used *only if* `rapidgzip` or `igzip` is installed and selected by the script for decompression.
+   - `export B3SUM_THREADS=N` (Default: 2) - Number of threads for `b3sum` hash calculation.
+   - `export DECOMPRESSOR_THREADS=N` (Default: 2) - Number of threads used _only if_ `rapidgzip` or `igzip` is installed and selected by the script for decompression.
 
    **Note:** The default `gunzip` decompressor is single-threaded and is not affected by these environment variables. When setting these values, be mindful of the CPU resources on the machine _running the script_. Setting thread counts too high relative to available cores can lead to CPU overcontention and potentially slow down the overall process rather than speeding it up.
 
@@ -180,7 +180,7 @@ Edit the `bootstrap.env` file to set your own credentials and passwords for data
   ```
 
   - `PROGRESS_INTERVAL`: How often (in seconds) the progress monitor updates `bootstrap_progress.log` (Default: 10).
-  - `DECOMPRESSOR_THREADS`: Number of threads used *only if* `rapidgzip` or `igzip` is installed and selected for decompression (Default: 2).
+  - `DECOMPRESSOR_THREADS`: Number of threads used _only if_ `rapidgzip` or `igzip` is installed and selected for decompression (Default: 2).
   - `B3SUM_THREADS`: Number of threads for `b3sum` hash calculation (Default: 2).
   - **Note:** The thread counts apply _per parallel import job_. Be mindful of the CPU resources on the machine _running the script_ to avoid overcontention.
 
