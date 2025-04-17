@@ -62,9 +62,9 @@ MONITOR_STOP_SIGNAL_FILE="/tmp/bootstrap_monitor.stop"
 
 # Required system tools
 # Note: A decompressor (rapidgzip, igzip, or gunzip) is checked separately
-REQUIRED_TOOLS=("psql" "realpath" "flock" "curl" "b3sum" "awk" "python3" "find" "cat" \
-    "sed" "tr" "sort" "wc" "ps" "date" "basename" "mkdir" "rm" "touch" "grep" "bc" "column" \
-    "mktemp" "mkfifo" "nproc" "sleep" "pgrep" "pkill" "stat" "dd" "tail" "head" "mv" "chmod")
+REQUIRED_TOOLS=("awk" "b3sum" "basename" "bc" "cat" "chmod" "column" "curl" "date" "dd" "find" "flock"
+    "grep" "head" "mkdir" "mkfifo" "mktemp" "mv" "nproc" "pgrep" "pkill" "ps" "psql" "python3"
+    "realpath" "rm" "sed" "sleep" "sort" "stat" "tail" "touch" "tr" "wc")
 
 export DECOMPRESS_TOOL=""
 export DECOMPRESS_FLAGS=""
@@ -78,10 +78,9 @@ USE_FULL_DB=""
 MANIFEST_FILE=""
 
 # Parallel processing configuration
-B3SUM_NUM_THREADS=${B3SUM_THREADS:-2}         # Number of threads for BLAKE3 hash calculation
-RAPIDGZIP_NUM_THREADS=${RAPIDGZIP_THREADS:-2} # Number of threads for rapidgzip decompression
-IGZIP_NUM_THREADS=${IGZIP_THREADS:-2}         # Number of threads for igzip decompression
-MAX_JOBS=""                                   # Maximum number of concurrent import jobs
+B3SUM_NUM_THREADS=${B3SUM_THREADS:-2}               # Number of threads for BLAKE3 hash calculation
+DECOMPRESSOR_NUM_THREADS=${DECOMPRESSOR_THREADS:-2} # Number of threads for the selected decompressor (rapidgzip or igzip)
+MAX_JOBS=""                                         # Maximum number of concurrent import jobs
 
 # Associative array for manifest row counts
 declare -A manifest_counts
@@ -202,15 +201,15 @@ check_required_tools() {
 determine_decompression_tool() {
   if command -v rapidgzip >/dev/null 2>&1; then
     DECOMPRESS_TOOL="rapidgzip"
-    DECOMPRESS_FLAGS=(-d -c "-P${RAPIDGZIP_NUM_THREADS}")
-    log "Using rapidgzip with ${RAPIDGZIP_NUM_THREADS} threads for decompression"
+    DECOMPRESS_FLAGS=(-d -c "-P${DECOMPRESSOR_NUM_THREADS}")
+    log "Using rapidgzip with ${DECOMPRESSOR_NUM_THREADS} threads for decompression"
     return 0
   fi
 
   if command -v igzip >/dev/null 2>&1; then
     DECOMPRESS_TOOL="igzip"
-    DECOMPRESS_FLAGS=(-d -c "-T${IGZIP_NUM_THREADS}")
-    log "Using igzip with ${IGZIP_NUM_THREADS} threads for decompression"
+    DECOMPRESS_FLAGS=(-d -c "-T${DECOMPRESSOR_NUM_THREADS}")
+    log "Using igzip with ${DECOMPRESSOR_NUM_THREADS} threads for decompression"
     return 0
   fi
 

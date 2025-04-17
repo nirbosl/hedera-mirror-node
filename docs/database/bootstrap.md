@@ -40,41 +40,41 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
 
 3. Ensure the following tools are installed on your machine:
 
-   - `psql`
-   - `gunzip`
-   - `realpath`
-   - `flock`
-   - `curl`
-   - `b3sum`
    - `awk`
-   - `python3`
-   - `find`
-   - `cat`
-   - `sed`
-   - `tr`
-   - `sort`
-   - `wc`
-   - `ps`
-   - `date`
+   - `b3sum`
    - `basename`
-   - `mkdir`
-   - `rm`
-   - `touch`
-   - `grep`
    - `bc`
+   - `cat`
+   - `chmod`
    - `column`
-   - `mktemp`
+   - `curl`
+   - `date`
+   - `dd`
+   - `find`
+   - `flock`
+   - `grep`
+   - `gunzip`
+   - `head`
+   - `mkdir`
    - `mkfifo`
+   - `mktemp`
+   - `mv`
    - `nproc`
-   - `sleep`
    - `pgrep`
    - `pkill`
+   - `ps`
+   - `psql`
+   - `python3`
+   - `realpath`
+   - `rm`
+   - `sed`
+   - `sleep`
+   - `sort`
    - `stat`
-   - `dd`
    - `tail`
-   - `head`
-   - `mv`
-   - `chmod`
+   - `touch`
+   - `tr`
+   - `wc`
 
    ### 1. Optional High-Performance Decompressors
 
@@ -91,9 +91,8 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
 
    **Important:** These thread counts apply _per parallel import job_ launched by the main script, not globally for the entire script. For example, if `MAX_JOBS` allows 4 concurrent import jobs and `B3SUM_THREADS` is set to 2, up to 8 threads could be used for hashing simultaneously across those jobs.
 
-   - `export B3SUM_THREADS=N` (Default: 2) - Number of threads for `b3sum` hash calculation.
-   - `export RAPIDGZIP_THREADS=N` (Default: 2) - Number of threads used _only if_ `rapidgzip` is installed and selected by the script for decompression.
-   - `export IGZIP_THREADS=N` (Default: 2) - Number of threads used _only if_ `igzip` is installed and selected by the script for decompression.
+   - `export B3SUM_THREADS=N`        (Default: 2) - Number of threads for `b3sum` hash calculation.
+   - `export DECOMPRESSOR_THREADS=N` (Default: 2) - Number of threads used *only if* `rapidgzip` or `igzip` is installed and selected by the script for decompression.
 
    **Note:** The default `gunzip` decompressor is single-threaded and is not affected by these environment variables. When setting these values, be mindful of the CPU resources on the machine _running the script_. Setting thread counts too high relative to available cores can lead to CPU overcontention and potentially slow down the overall process rather than speeding it up.
 
@@ -176,14 +175,12 @@ Edit the `bootstrap.env` file to set your own credentials and passwords for data
   export PROGRESS_INTERVAL=10
 
   # Parallelism for compression and checksum calculation
-  export IGZIP_THREADS=2      # Number of threads for igzip
-  export RAPIDGZIP_THREADS=2  # Number of threads for rapidgzip
-  export B3SUM_THREADS=2      # Number of threads for b3sum
+  export DECOMPRESSOR_THREADS=2 # Number of threads for selected decompressor (rapidgzip or igzip)
+  export B3SUM_THREADS=2        # Number of threads for b3sum
   ```
 
   - `PROGRESS_INTERVAL`: How often (in seconds) the progress monitor updates `bootstrap_progress.log` (Default: 10).
-  - `IGZIP_THREADS`: Number of threads used _only if_ `igzip` is installed and selected for decompression (Default: 2).
-  - `RAPIDGZIP_THREADS`: Number of threads used _only if_ `rapidgzip` is installed and selected for decompression (Default: 2).
+  - `DECOMPRESSOR_THREADS`: Number of threads used *only if* `rapidgzip` or `igzip` is installed and selected for decompression (Default: 2).
   - `B3SUM_THREADS`: Number of threads for `b3sum` hash calculation (Default: 2).
   - **Note:** The thread counts apply _per parallel import job_. Be mindful of the CPU resources on the machine _running the script_ to avoid overcontention.
 
