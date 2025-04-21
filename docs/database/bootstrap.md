@@ -43,7 +43,15 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
    - `psql`
    - `python3`
 
-    **Note:** The `bootstrap.sh` script performs a check for all required command-line tools upon startup and will halt if any are missing. The complete list of checked tools can be found in the `REQUIRED_TOOLS` array variable within the `bootstrap.sh` script itself. Most tools listed there are standard core utilities and are typically included in common Linux distributions.
+   **Note:** The `bootstrap.sh` script performs a check for all required command-line tools upon startup and will halt if any are missing. The complete list of checked tools can be found in the `REQUIRED_TOOLS` array variable within the `bootstrap.sh` script itself. Most tools listed there are standard core utilities and are typically included in common Linux distributions.
+
+4. Install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install), then authenticate:
+
+   ```bash
+   gcloud auth login
+   ```
+
+5. A Google Cloud Platform (GCP) account with a valid billing account attached (required for downloading data from a Requester Pays bucket). For detailed instructions on obtaining the necessary GCP information, refer to [Hedera's documentation](https://docs.hedera.com/hedera/core-concepts/mirror-nodes/run-your-own-beta-mirror-node/run-your-own-mirror-node-gcs#id-1.-obtain-google-cloud-platform-requester-pay-information).
 
    ### 1. Optional High-Performance Decompressors
 
@@ -64,14 +72,6 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
    - `export DECOMPRESSOR_THREADS=N` (Default: 2) - Number of threads used _only if_ `rapidgzip` or `igzip` is installed and selected by the script for decompression.
 
    **Note:** The default `gunzip` decompressor is single-threaded and is not affected by these environment variables. When setting these values, be mindful of the CPU resources on the machine _running the script_. Setting thread counts too high relative to available cores can lead to CPU overcontention and potentially slow down the overall process rather than speeding it up.
-
-4. Install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install), then authenticate:
-
-   ```bash
-   gcloud auth login
-   ```
-
-5. A Google Cloud Platform (GCP) account with a valid billing account attached (required for downloading data from a Requester Pays bucket). For detailed instructions on obtaining the necessary GCP information, refer to [Hedera's documentation](https://docs.hedera.com/hedera/core-concepts/mirror-nodes/run-your-own-beta-mirror-node/run-your-own-mirror-node-gcs#id-1.-obtain-google-cloud-platform-requester-pay-information).
 
 ---
 
