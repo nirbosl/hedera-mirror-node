@@ -34,47 +34,17 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
 
 ## Prerequisites
 
-1. **PostgreSQL 16** installed and running.
-
-2. Access to a machine where you can run the initialization and import scripts and connect to the PostgreSQL database.
-
+1. Access to a modern Linux machine (tested on Ubuntu 24.04 LTS) where you can run the initialization/bootstrap scripts and connect to the PostgreSQL database.
+2. **PostgreSQL 16** installed and running.
 3. Ensure the following tools are installed on your machine:
 
-   - `awk`
    - `b3sum`
-   - `basename`
-   - `bc`
-   - `cat`
-   - `chmod`
-   - `column`
    - `curl`
-   - `date`
-   - `dd`
-   - `find`
-   - `flock`
-   - `grep`
-   - `gunzip`
-   - `head`
-   - `mkdir`
-   - `mkfifo`
-   - `mktemp`
-   - `mv`
-   - `nproc`
-   - `pgrep`
-   - `pkill`
-   - `ps`
    - `psql`
    - `python3`
-   - `realpath`
-   - `rm`
-   - `sed`
-   - `sleep`
-   - `sort`
-   - `stat`
-   - `tail`
-   - `touch`
-   - `tr`
-   - `wc`
+
+   > [!NOTE]
+   > The `bootstrap.sh` script performs a check for all required command-line tools upon startup and will halt if any are missing. The complete list of checked tools can be found in the `REQUIRED_TOOLS` array variable within the `bootstrap.sh` script itself. Most tools listed there are standard core utilities and are typically included in common Linux distributions.
 
    ### 1. Optional High-Performance Decompressors
 
