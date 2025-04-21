@@ -43,8 +43,7 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
    - `psql`
    - `python3`
 
-   > [!NOTE]
-   > The `bootstrap.sh` script performs a check for all required command-line tools upon startup and will halt if any are missing. The complete list of checked tools can be found in the `REQUIRED_TOOLS` array variable within the `bootstrap.sh` script itself. Most tools listed there are standard core utilities and are typically included in common Linux distributions.
+    **Note:** The `bootstrap.sh` script performs a check for all required command-line tools upon startup and will halt if any are missing. The complete list of checked tools can be found in the `REQUIRED_TOOLS` array variable within the `bootstrap.sh` script itself. Most tools listed there are standard core utilities and are typically included in common Linux distributions.
 
    ### 1. Optional High-Performance Decompressors
 
