@@ -221,9 +221,6 @@ gcloud storage rsync -r -x ".*_atma\.csv\.gz$" "gs://mirrornode-db-export/$VERSI
 
 ##### Download Full DB Data Files
 
-> [!WARNING]
-> Bootstrap of a full database export is currently **not supported** by the `bootstrap.sh` script in this version. Support for full database bootstrap will be added in the near future. The instructions below are for informational purposes only. For full-db support, you may use the previous version by checking out the following branch: `git checkout release/0.127`. The previous version is compatible only with the data files of the `0.113.2` export in the GCS bucket.
-
 Create a directory and download all files and subdirectories for the selected version:
 
 ```bash
@@ -285,9 +282,6 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
 
    For a full database import:
 
-   > [!WARNING]
-   > The `--full` option for a full database import is currently **not supported** in this version of the `bootstrap.sh` script. Using this flag will result in errors and a failed database bootstrap.
-
    ```bash
    setsid ./bootstrap.sh 8 --full /path/to/db_export 2>> bootstrap.log
    ```
@@ -297,7 +291,7 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
    - `/path/to/db_export` is the directory where you downloaded the database export data.
    - The script creates several tracking and logging files:
 
-     - `bootstrap.log`: Main log file for all script operations. Timestamps now use abbreviated month names (e.g., 'Apr' instead of '04').
+     - `bootstrap.log`: Main log file for all script operations.
      - `bootstrap.pid`: Stores the process ID of the main script, used for managing the process group (e.g., for termination). The script performs an improved check at startup to avoid conflicts with unrelated processes that might share a stale PID.
      - `bootstrap_tracking.txt`: Tracks the progress of each file's import and hash verification.
      - `bootstrap_progress.log`: Displays real-time progress of active `psql COPY` operations (see Monitoring section).
@@ -371,7 +365,7 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
     - Hash Verification Status:
       - `HASH_UNVERIFIED`: BLAKE3 hash has not been verified yet.
       - `HASH_VERIFIED`: BLAKE3 hash verification passed.
-      - `UNVERIFIED_COUNT`: (Fallback) Import completed, but row count query failed (e.g., couldn't extract partition info).
+      - `BOUNDARY_CHECK_FAILED`: (Fallback) Import completed, hash verified, but primary row count query and fallback boundary timestamp check failed.
       - `ROW_COUNT_UNVERIFIED`: (Fallback) Import completed, primary row count query failed, but a basic data existence check passed.
 
 #### **6.2. Stopping the Script**
@@ -399,9 +393,6 @@ If you need to stop the script before it completes:
 #### **6.3. Resuming the Import Process**
 
 - **Re-run the Bootstrap Script:**
-
-  > [!WARNING]
-  > The `--full` option for resuming a full database import is currently **not supported** in this version.
 
   ```bash
   # Minimal DB

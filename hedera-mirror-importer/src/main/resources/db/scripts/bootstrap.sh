@@ -1128,6 +1128,7 @@ except Exception as e:
       fi
     else
       log "Fallback boundary check failed for ${file}" "ERROR"
+      write_tracking_file "$filename" "IMPORTED" "BOUNDARY_CHECK_FAILED"
     fi
   else
     log "Skipping boundary check: is_partitioned=${is_partitioned}, timestamp_info=${timestamp_info}" "WARN"
