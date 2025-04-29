@@ -2,7 +2,6 @@
 
 # SPDX-License-Identifier: Apache-2.0
 
-# OS Check: Ensure the script is running on Linux
 kernel_name=$(uname -s)
 if [[ "$kernel_name" != "Linux" ]]; then
   echo "[ERROR] This script is designed to run only on Linux. Detected OS: $kernel_name. Exiting." >&2
