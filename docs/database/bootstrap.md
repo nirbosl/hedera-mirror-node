@@ -78,7 +78,7 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
 
    The `bootstrap.sh` script utilizes multiple layers of parallelism: it processes up to `MAX_JOBS` data files concurrently, and for each file, it may use `DECOMPRESSOR_THREADS` (for `rapidgzip` or `igzip`) and `B3SUM_THREADS` in parallel. Proper resource allocation on the machine running the script is crucial for optimal performance.
 
-   - **CPU Threads:** A good starting point is `((DECOMPRESSOR_THREADS + B3SUM_THREADS) * MAX_JOBS) + 2`. (Note: `DECOMPRESSOR_THREADS` and `B3SUM_THREADS` are configurable in `bootstrap.env`).
+   - **CPU Threads:** A good starting point is `((DECOMPRESSOR_THREADS + B3SUM_THREADS) * MAX_JOBS) + 2`.
      - _Example:_ Using defaults (`DECOMPRESSOR_THREADS=2`, `B3SUM_THREADS=2`) and `MAX_JOBS=8` (derived from an 8-core DB), you would ideally want `((2 + 2) * 8) + 2 = 34` CPU threads available on the script runner machine.
    - **RAM:** Allocate a minimum of 1GB, preferably 2GB, per calculated CPU thread.
      - _Example:_ For 34 threads, aim for 34GB to 68GB of RAM.
