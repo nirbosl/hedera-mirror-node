@@ -9,6 +9,7 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
 - [Prerequisites](#prerequisites)
   - [1. Optional High-Performance Decompressors](#1-optional-high-performance-decompressors)
   - [2. Environment Variables for Thread Counts](#2-environment-variables-for-thread-counts)
+  - [3. Sizing the Script Runner Machine](#3-sizing-the-script-runner-machine)
 - [Database Initialization and Data Import](#database-initialization-and-data-import)
   - [1. Download the Required Scripts and Configuration File](#1-download-the-required-scripts-and-configuration-file)
   - [2. Edit the `bootstrap.env` Configuration File](#2-edit-the-bootstrapenv-configuration-file)
@@ -72,6 +73,20 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
    - `export DECOMPRESSOR_THREADS=N` (Default: 2) - Number of threads used _only if_ `rapidgzip` or `igzip` is installed and selected by the script for decompression.
 
    **Note:** The default `gunzip` decompressor is single-threaded and is not affected by these environment variables. When setting these values, be mindful of the CPU resources on the machine _running the script_. Setting thread counts too high relative to available cores can lead to CPU overcontention and potentially slow down the overall process rather than speeding it up.
+
+   ### 3. Sizing the Script Runner Machine
+
+   The `bootstrap.sh` script utilizes multiple layers of parallelism: it processes up to `MAX_JOBS` data files concurrently, and for each file, it may use `DECOMPRESSOR_THREADS` (for `rapidgzip` or `igzip`) and `B3SUM_THREADS` in parallel. Proper resource allocation on the machine running the script is crucial for optimal performance.
+
+   - **CPU Threads:** A good starting point is `((DECOMPRESSOR_THREADS + B3SUM_THREADS) * MAX_JOBS) + 2`. (Note: `DECOMPRESSOR_THREADS` and `B3SUM_THREADS` are configurable in `bootstrap.env`).
+     - _Example:_ Using defaults (`DECOMPRESSOR_THREADS=2`, `B3SUM_THREADS=2`) and `MAX_JOBS=8` (derived from an 8-core DB), you would ideally want `((2 + 2) * 8) + 2 = 34` CPU threads available on the script runner machine.
+   - **RAM:** Allocate a minimum of 1GB, preferably 2GB, per calculated CPU thread.
+     - _Example:_ For 34 threads, aim for 34GB to 68GB of RAM.
+
+   > [!NOTE]
+   > For optimal performance and resource isolation, it is strongly recommended to run the `bootstrap.sh` script on a separate machine from the PostgreSQL database server. This prevents contention for CPU, RAM, and I/O resources between the import script and the database itself.
+   >
+   > Additionally, ensure the database server has adequate resources for the import: allocate at least `MAX_JOBS + 2` CPU threads and sufficient RAM to handle `MAX_JOBS` concurrent write operations, considering your specific PostgreSQL configuration (e.g., `work_mem`, `shared_buffers`).
 
 ---
 
