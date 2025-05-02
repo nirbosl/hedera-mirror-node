@@ -390,16 +390,16 @@ If you need to stop the script before it completes:
 1. **Gracefully Terminate the Script and All Child Processes:**
 
    ```bash
-   kill -TERM -- -$(cat bootstrap.pid)
+   kill -TERM -- -$(cat temp/bootstrap.pid)
    ```
 
-   - Sends the `SIGTERM` signal to the entire process group identified by the PID in `bootstrap.pid`.
+   - Sends the `SIGTERM` signal to the entire process group identified by the PID in `temp/bootstrap.pid`.
    - Allows the script and all its background processes to perform cleanup (including removing temporary DB objects and files) and exit gracefully.
 
 2. **If the Script Doesn't Stop, Force Termination of the Process Group:**
 
    ```bash
-   kill -KILL -$(cat bootstrap.pid)
+   kill -KILL -- -$(cat temp/bootstrap.pid)
    ```
 
    - Sends the `SIGKILL` signal to the entire process group.

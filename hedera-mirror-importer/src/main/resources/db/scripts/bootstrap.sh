@@ -17,7 +17,14 @@ exec 1>/dev/null 2>>bootstrap.log
 exec 3>&2
 exec 2>/dev/null
 
-PID_FILE="bootstrap.pid"
+SCRIPT_TEMP_DIR="./temp"
+
+if [[ -d "$SCRIPT_TEMP_DIR" ]]; then
+  rm -rf "$SCRIPT_TEMP_DIR"
+fi
+mkdir -p "$SCRIPT_TEMP_DIR"
+
+PID_FILE="$SCRIPT_TEMP_DIR/bootstrap.pid"
 script_name=$(basename "$0")
 
 # Check if another instance of the script is already running
@@ -61,11 +68,9 @@ PROGRESS_FILE="bootstrap_progress.log"
 PROGRESS_INTERVAL=${PROGRESS_INTERVAL:-10}
 PROGRESS_DB_TABLE="bootstrap_manifest_progress"
 
-SCRIPT_TEMP_DIR="./temp"
-mkdir -p "$SCRIPT_TEMP_DIR"
-
 LOG_FILE_LOCK="$SCRIPT_TEMP_DIR/$LOG_FILE.lock"
-LOCK_FILE="$SCRIPT_TEMP_DIR/bootstrap_tracking.lock"
+TRACKING_FILE_TMP="$SCRIPT_TEMP_DIR/bootstrap_tracking.tmp"
+TRACKING_LOCK_FILE="$SCRIPT_TEMP_DIR/bootstrap_tracking.lock"
 DISCREPANCY_FILE_LOCK="$SCRIPT_TEMP_DIR/$DISCREPANCY_FILE.lock"
 
 MONITOR_TEMP_DIR="$SCRIPT_TEMP_DIR/monitor"
@@ -85,7 +90,7 @@ export DECOMPRESSOR_CHECKED=false
 MISSING_TOOLS=()
 
 export DB_SKIP_FLAG_FILE="SKIP_DB_INIT"
-export CLEANUP_IN_PROGRESS_FILE="BOOTSTRAP_CLEANUP"
+export CLEANUP_IN_PROGRESS_FILE="$SCRIPT_TEMP_DIR/BOOTSTRAP_CLEANUP"
 
 USE_FULL_DB=""
 MANIFEST_FILE=""
@@ -260,8 +265,8 @@ cleanup() {
     exec 2>/dev/null
     touch "$CLEANUP_IN_PROGRESS_FILE"
 
-    if [[ -f "${TRACKING_FILE}.tmp" ]]; then
-      mv "${TRACKING_FILE}.tmp" "$TRACKING_FILE"
+    if [[ -f "$TRACKING_FILE_TMP" ]]; then
+      mv "$TRACKING_FILE_TMP" "$TRACKING_FILE"
     fi
 
     pkill -9 psql 2>/dev/null || true
@@ -340,14 +345,14 @@ write_tracking_file() {
     fi
 
     # Remove any existing entry for this file
-    grep -v \"^$basename_file \" \"$TRACKING_FILE\" > \"${TRACKING_FILE}.tmp\" 2>/dev/null || true
-    mv \"${TRACKING_FILE}.tmp\" \"$TRACKING_FILE\"
+    grep -v \"^$basename_file \" \"$TRACKING_FILE\" > \"$TRACKING_FILE_TMP\" 2>/dev/null || true
+    mv \"$TRACKING_FILE_TMP\" \"$TRACKING_FILE\"
 
     # Add the updated line with the final status and hash
     echo \"$basename_file \$new_status \$new_hash_status\" >> \"$TRACKING_FILE\"
   "
 
-  with_lock "$LOCK_FILE" "$cmd"
+  with_lock "$TRACKING_LOCK_FILE" "$cmd"
 }
 
 read_tracking_status() {
@@ -560,8 +565,8 @@ process_manifest() {
     exit 1
   fi
 
-  if [[ -f "$LOCK_FILE" ]]; then
-    rm -f "$LOCK_FILE"
+  if [[ -f "$TRACKING_LOCK_FILE" ]]; then
+    rm -f "$TRACKING_LOCK_FILE"
   fi
 
   if [[ "$PGUSER" == "mirror_node" && "$PGDATABASE" == "mirror_node" ]]; then
@@ -1535,12 +1540,6 @@ if ! check_required_tools; then
     exit 1
 fi
 
-if [[ -d "$SCRIPT_TEMP_DIR" ]]; then
-  log "Removing existing temporary directory: $SCRIPT_TEMP_DIR" "INFO"
-  rm -rf "$SCRIPT_TEMP_DIR"
-fi
-mkdir -p "$SCRIPT_TEMP_DIR"
-
 if [[ -n "$USE_FULL_DB" ]]; then
     MANIFEST_FILE="${IMPORT_DIR}/manifest.csv"
 else
@@ -1631,7 +1630,7 @@ init_cmd="for file in \"\${files[@]}\"; do
   fi
 done"
 
-with_lock "$LOCK_FILE" "$init_cmd"
+with_lock "$TRACKING_LOCK_FILE" "$init_cmd"
 
 # Initialize variables for background processes
 overall_success=true
