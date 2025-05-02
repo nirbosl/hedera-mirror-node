@@ -55,17 +55,18 @@ REQUIRED_BASH_MINOR=3
 DEBUG_MODE=${DEBUG_MODE:-false}
 
 LOG_FILE="bootstrap.log"
-LOG_FILE_LOCK="$LOG_FILE.lock"
 TRACKING_FILE="bootstrap_tracking.txt"
-LOCK_FILE="bootstrap_tracking.lock"
 DISCREPANCY_FILE="bootstrap_discrepancies.log"
-DISCREPANCY_FILE_LOCK="$DISCREPANCY_FILE.lock"
 PROGRESS_FILE="bootstrap_progress.log"
 PROGRESS_INTERVAL=${PROGRESS_INTERVAL:-10}
 PROGRESS_DB_TABLE="bootstrap_manifest_progress"
 
 SCRIPT_TEMP_DIR="./temp"
 mkdir -p "$SCRIPT_TEMP_DIR"
+
+LOG_FILE_LOCK="$SCRIPT_TEMP_DIR/$LOG_FILE.lock"
+LOCK_FILE="$SCRIPT_TEMP_DIR/bootstrap_tracking.lock"
+DISCREPANCY_FILE_LOCK="$SCRIPT_TEMP_DIR/$DISCREPANCY_FILE.lock"
 
 MONITOR_TEMP_DIR="$SCRIPT_TEMP_DIR/monitor"
 mkdir -p "$MONITOR_TEMP_DIR"
@@ -251,6 +252,7 @@ kill_descendants() {
 cleanup() {
   disable_pipefail
   local trap_type="$1"
+  local exit_code=1
 
   log "Cleanup function triggered with trap type: $trap_type"
 
@@ -275,62 +277,28 @@ cleanup() {
     done
 
     pkill -9 -P $$ 2>/dev/null || true
-
     log "Script interrupted. All processes terminated." "TERMINATE"
 
     wait 2>/dev/null || true
-
-    rm -f "$LOCK_FILE" "$LOG_FILE_LOCK" "$DISCREPANCY_FILE_LOCK"
-
-    if command -v psql >/dev/null 2>&1; then
-      log "Attempting final cleanup of temporary progress table..." "DEBUG"
-
-      if [[ "$trap_type" != "EXIT" ]] || [[ $(jobs -rp | wc -l) -eq 0 ]]; then
-        psql -q -c "DROP TABLE IF EXISTS ${PROGRESS_DB_TABLE};" >/dev/null 2>&1 || true
-      else
-        log "Skipping table drop during EXIT trap as processes are still running" "DEBUG"
-      fi
-    fi
-
-    log "Removing temporary directory: $SCRIPT_TEMP_DIR" "DEBUG"
-    rm -rf "$SCRIPT_TEMP_DIR"
-    rm -f "$PID_FILE" "$CLEANUP_IN_PROGRESS_FILE" "$PROGRESS_FILE" "$LOG_FILE_LOCK" || true
-
-    if [[ -f "$PROGRESS_FILE" ]]; then
-      log "Removing progress file: $PROGRESS_FILE" "DEBUG"
-      rm -f "$PROGRESS_FILE"
-    fi
-
-    rm -f "$LOG_FILE_LOCK" 2>/dev/null || true
-
-    exit 1
   fi
-
-  rm -f "$LOCK_FILE" "$LOG_FILE_LOCK" "$DISCREPANCY_FILE_LOCK"
 
   if command -v psql >/dev/null 2>&1; then
     log "Attempting final cleanup of temporary progress table..." "DEBUG"
-
-    if [[ "$trap_type" != "EXIT" ]] || [[ $(jobs -rp | wc -l) -eq 0 ]]; then
-      psql -q -c "DROP TABLE IF EXISTS ${PROGRESS_DB_TABLE};" >/dev/null 2>&1 || true
-    else
-      log "Skipping table drop during EXIT trap as processes are still running" "DEBUG"
-    fi
+    psql -q -c "DROP TABLE IF EXISTS ${PROGRESS_DB_TABLE};" >/dev/null 2>&1 || true
   fi
 
-  log "Removing temporary directory: $SCRIPT_TEMP_DIR" "DEBUG"
-  rm -rf "$SCRIPT_TEMP_DIR"
-  rm -f "$PID_FILE" "$CLEANUP_IN_PROGRESS_FILE" "$PROGRESS_FILE" "$LOG_FILE_LOCK" || true
+  rm -f "$PID_FILE" "$CLEANUP_IN_PROGRESS_FILE" "$PROGRESS_FILE" || true
 
-  if [[ -f "$PROGRESS_FILE" ]]; then
-    log "Removing progress file: $PROGRESS_FILE" "DEBUG"
-    rm -f "$PROGRESS_FILE"
+  if [[ "$trap_type" != "INT" && "$trap_type" != "TERM" && "$trap_type" != "PIPE" ]]; then
+      if [[ -v overall_success ]] && [[ "$overall_success" == true ]]; then
+          exit_code=0
+      else
+          exit_code=1
+      fi
   fi
-
-  rm -f "$LOG_FILE_LOCK" 2>/dev/null || true
 
   if [[ "$trap_type" != "EXIT" ]]; then
-    exit 1
+    exit "$exit_code"
   fi
 }
 
@@ -396,6 +364,7 @@ collect_import_tasks() {
   find "$IMPORT_DIR" -type f -name "*.csv.gz"
 }
 
+# shellcheck disable=SC2317
 write_discrepancy() {
   local file="$1"
   local expected_count="$2"
@@ -681,6 +650,7 @@ validate_special_files() {
   return 0
 }
 
+# shellcheck disable=SC2317
 retry_query() {
   local query="$1"
   local retries=3
@@ -693,7 +663,7 @@ retry_query() {
   status=$?
 
   for ((i=1; i<retries; i++)); do
-    if [ $status -eq 0 ]; then
+    if [ "$status" -eq 0 ]; then
       break
     fi
 
@@ -853,6 +823,7 @@ import_file() {
   row_counter=$(mktemp "$job_temp_dir/row_count.XXXXXX") || { log "mktemp failed for row_counter: $?" "ERROR"; return 1; }
   local header_stderr_file
   header_stderr_file=$(mktemp "$job_temp_dir/header_stderr.XXXXXX") || { log "mktemp failed for header_stderr_file: $?" "ERROR"; return 1; }
+  log "Created header_stderr_file: $header_stderr_file" "DEBUG"
   local python_stderr_file
   python_stderr_file=$(mktemp "$job_temp_dir/python_header_stderr.XXXXXX") || { log "mktemp failed for python_stderr_file: $?" "ERROR"; return 1; }
 
@@ -875,8 +846,10 @@ import_file() {
 
   local header_content
   header_content=$(cat "$header_temp_file" 2>/dev/null || echo "File '$header_temp_file' empty or unreadable")
+  log "Header content read: [$header_content]" "DEBUG"
   local error_content
   error_content=$(cat "$decomp_err_file" 2>/dev/null || echo "File '$decomp_err_file' empty or unreadable")
+  log "Decompression error content read: [$error_content]" "DEBUG"
 
   log "Header extraction pipe completed for $file. Decompress exit code: $decomp_status, Head exit code: $head_status" "DEBUG"
 
@@ -957,9 +930,9 @@ except Exception as e:
   db_column_count=$(echo "$db_columns" | awk -F, '{print NF}')
 
   if [[ "$csv_column_count" != "$db_column_count" ]]; then
-    log "Column count mismatch for $table: CSV has $csv_column_count columns, DB table has $db_column_count columns. Using CSV header for mapping." "WARN"
+    log "Column count mismatch for $table (DB Query Exit: $db_query_exit_code): CSV has $csv_column_count columns, DB table has $db_column_count columns. Using CSV header for mapping." "WARN"
   else
-    log "Column count matches between CSV and database for $table ($csv_column_count columns)" "DEBUG"
+    log "Column count matches between CSV and database for $table ($csv_column_count columns) (DB Query Exit: $db_query_exit_code)" "DEBUG"
   fi
 
   # Start decompression in background, writing to named pipe with on-the-fly hash calculation
@@ -1561,6 +1534,12 @@ source_bootstrap_env
 if ! check_required_tools; then
     exit 1
 fi
+
+if [[ -d "$SCRIPT_TEMP_DIR" ]]; then
+  log "Removing existing temporary directory: $SCRIPT_TEMP_DIR" "INFO"
+  rm -rf "$SCRIPT_TEMP_DIR"
+fi
+mkdir -p "$SCRIPT_TEMP_DIR"
 
 if [[ -n "$USE_FULL_DB" ]]; then
     MANIFEST_FILE="${IMPORT_DIR}/manifest.csv"
