@@ -19,9 +19,7 @@ exec 2>/dev/null
 
 SCRIPT_TEMP_DIR="./temp"
 
-if [[ -d "$SCRIPT_TEMP_DIR" ]]; then
-  rm -rf "$SCRIPT_TEMP_DIR"
-fi
+rm -rf "$SCRIPT_TEMP_DIR"
 mkdir -p "$SCRIPT_TEMP_DIR"
 
 PID_FILE="$SCRIPT_TEMP_DIR/bootstrap.pid"
