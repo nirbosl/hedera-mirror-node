@@ -707,7 +707,6 @@ import_file() {
   local filename="$1"
   local table
   local absolute_file
-  local is_partitioned
   local file
   file=$(basename "$filename")
   local relative_path
@@ -771,20 +770,6 @@ import_file() {
   if [[ -z "$table" ]]; then
     log "Could not determine table name from filename: $file, skipping import" "ERROR"
     return 1
-  fi
-
-  # Determine which timestamp column to use for queries
-  # record_file table is a special case that uses consensus_end column for timestamps
-  # instead of consensus_timestamp which is used by all other tables
-  local timestamp_column="consensus_timestamp"
-  if [[ "$table" == "record_file" ]]; then
-    timestamp_column="consensus_end"
-  fi
-
-  if [[ "$file" =~ _p[0-9]{4}_[0-9]{2}\.csv\.gz$ ]]; then
-    is_partitioned=true
-  else
-    is_partitioned=false
   fi
 
   log "Importing into table $table from $filename, PID: $current_pid"
