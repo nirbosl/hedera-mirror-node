@@ -679,29 +679,6 @@ retry_query() {
   echo "${result}:${status}"
 }
 
-get_partition_timestamps() {
-  local filename="$1"
-  local basename_file
-  basename_file=$(basename "$filename")
-
-  if [[ "$basename_file" =~ _p([0-9]{4})_([0-9]{2})\.csv\.gz$ ]]; then
-    local year="${BASH_REMATCH[1]}"
-    local month="${BASH_REMATCH[2]}"
-
-    # Calculate start timestamp (first day of month) as nanoseconds
-    local start_ts
-    start_ts=$(psql -v ON_ERROR_STOP=1 -q -Atc "SELECT (EXTRACT(EPOCH FROM TIMESTAMP '${year}-${month}-01 00:00:00.000000000') * 1000000000)::bigint;")
-
-    # Calculate end timestamp (gets the first nanosecond of the next month)
-    local end_ts
-    end_ts=$(psql -v ON_ERROR_STOP=1 -q -Atc "SELECT (EXTRACT(EPOCH FROM date_trunc('month', '${year}-${month}-01 00:00:00.000000000'::timestamp + interval '1 month')) * 1000000000)::bigint;")
-
-    if [[ -n "$start_ts" && -n "$end_ts" ]]; then
-      echo "${start_ts}:${end_ts}:${year}:${month}"
-    fi
-  fi
-}
-
 verify_postgres_connection() {
   log "Verifying PostgreSQL connection..."
 
@@ -1070,47 +1047,7 @@ except Exception as e:
     log "Import pipeline row count ($import_pipe_row_count) doesn't match expected count ($expected_count) for $file. Proceeding to boundary check..." "WARN"
   fi
 
-  local timestamp_info=""
-  local start_ts=""
-  local end_ts=""
-  if [[ "$is_partitioned" == "true" ]]; then
-    timestamp_info=$(get_partition_timestamps "$filename")
-    if [[ -n "$timestamp_info" ]]; then
-      IFS=':' read -r start_ts end_ts year month <<< "$timestamp_info"
-    fi
-  fi
-
-  # For partitioned tables, try boundary check as a fallback
-  if [[ "$is_partitioned" == "true" && -n "$timestamp_info" ]]; then
-    log "Attempting boundary check for partitioned file: ${file}"
-
-    local boundary_count
-    local boundary_status
-    log "Starting boundary check query for $file..." "DEBUG"
-    boundary_count=$(psql -v ON_ERROR_STOP=1 -q -Atc "SELECT COUNT(*) FROM ${table} WHERE ${timestamp_column} IN (${start_ts}, ${end_ts});")
-    boundary_status=$?
-    log "Finished boundary check query for $file." "DEBUG"
-
-    if [ $boundary_status -eq 0 ]; then
-      # Check if both boundary timestamps exist (count should be 2)
-      if [ "$boundary_count" -eq 2 ]; then
-        log "Boundary check successful for ${file}, both start and end timestamps found"
-        log "Using manifest row count ${expected_count} based on boundary verification"
-        write_tracking_file "$filename" "IMPORTED" "HASH_VERIFIED"
-        return 0
-      else
-        log "Boundary check found ${boundary_count}/2 boundary timestamps for ${file}" "WARN"
-      fi
-    else
-      log "Fallback boundary check failed for ${file}" "ERROR"
-      write_tracking_file "$filename" "IMPORTED" "BOUNDARY_CHECK_FAILED"
-    fi
-  else
-    log "Skipping boundary check: is_partitioned=${is_partitioned}, timestamp_info=${timestamp_info}" "WARN"
-  fi
-
-  # If boundary check failed, try a simple EXISTS check as a last resort
-  log "Final count query failure for ${file}, attempting existence check as a last resort..." "WARN"
+  log "Primary row count failed for ${file}, attempting generic existence check..." "WARN"
 
   local existence_check
   log "Starting existence check query for $file..." "DEBUG"
@@ -1641,7 +1578,7 @@ export -f \
   log show_help check_bash_version check_required_tools \
   determine_decompression_tool kill_descendants cleanup write_tracking_file read_tracking_status \
   collect_import_tasks write_discrepancy source_bootstrap_env process_manifest validate_file \
-  validate_special_files initialize_database import_file get_table_name_from_filename retry_query get_partition_timestamps \
+  validate_special_files initialize_database import_file get_table_name_from_filename retry_query \
   find_full_path verify_postgres_connection with_lock print_final_statistics
 
 export \

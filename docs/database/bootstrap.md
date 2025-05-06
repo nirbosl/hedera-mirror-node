@@ -380,7 +380,6 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
     - Hash Verification Status:
       - `HASH_UNVERIFIED`: BLAKE3 hash has not been verified yet.
       - `HASH_VERIFIED`: BLAKE3 hash verification passed.
-      - `BOUNDARY_CHECK_FAILED`: (Fallback) Import completed, hash verified, but primary row count query and fallback boundary timestamp check failed.
       - `ROW_COUNT_UNVERIFIED`: (Fallback) Import completed, primary row count query failed, but a basic data existence check passed.
 
 #### **6.2. Stopping the Script**
