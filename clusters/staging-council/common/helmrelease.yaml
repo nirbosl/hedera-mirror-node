@@ -1,0 +1,88 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: common
+spec:
+  chart:
+    spec:
+      chart: hedera-mirror-common
+      sourceRef:
+        kind: HelmRepository
+        name: hedera-mirror-node
+      valuesFiles:
+        - values.yaml
+        - values-v2.yaml
+      version: "0.143.0-rc2"
+  dependsOn:
+    - name: testkube
+      namespace: testkube
+  driftDetection:
+    mode: enabled
+    ignore:
+      - paths: [""]
+        target:
+          kind: (MutatingWebhookConfiguration|SGConfig|ValidatingWebhookConfiguration)
+  install:
+    crds: CreateReplace
+  interval: 1m
+  timeout: 10m
+  upgrade:
+    cleanupOnFail: true
+  valuesFrom:
+    - kind: Secret
+      name: mirror
+  values:
+    loki:
+      loki:
+        structuredConfig:
+          ruler:
+            external_url: https://mirrornode.grafana.net
+    minio:
+      enabled: false
+    prometheus:
+      prometheus:
+        prometheusSpec:
+          externalLabels:
+            cluster: staging-council
+          remoteWrite:
+            - basicAuth:
+                password:
+                  key: password
+                  name: grafana-cloud
+                username:
+                  key: username
+                  name: grafana-cloud
+              url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push
+              writeRelabelConfigs:
+                - action: keep
+                  regex: .*(graphql|grpc|importer|monitor|rest|restjava|rosetta|traefik|web3)$
+                  sourceLabels: [job]
+                - action: drop
+                  regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
+                  sourceLabels: [__name__]
+          replicaExternalLabelName: __replica__
+          resources:
+            limits:
+              memory: 8Gi
+            requests:
+              memory: 4Gi
+          storageSpec:
+            volumeClaimTemplate:
+              spec:
+                resources:
+                  requests:
+                    storage: 250Gi
+    testkube:
+      enabled: true
+      test:
+        gitBranch: main
+        target:
+          namespace: performance
+    traefik:
+      service:
+        annotations:
+          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod-new"} } }'
+    zfs:
+      coordinator:
+        initialDiskSize: 400GB
