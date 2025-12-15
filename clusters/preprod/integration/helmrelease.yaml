@@ -37,7 +37,7 @@ spec:
       image:
         pullPolicy: Always
       podAnnotations:
-        git.commit: 9a9710a5ecdcf004d1b1d3dd1dbaf62d72f473bb
+        git.commit: 12e6bc6b34f51fc5aec3cf7662917c73a41971ab
     graphql:
       enabled: true
     importer:
