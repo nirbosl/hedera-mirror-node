@@ -9,7 +9,7 @@ spec:
       chart: hedera-mirror
       sourceRef:
         kind: HelmRepository
-        name: hedera-mirror-node
+        name: mirror
       valuesFiles:
         - values.yaml
         - values-prod.yaml
