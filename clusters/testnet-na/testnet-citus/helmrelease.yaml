@@ -61,8 +61,6 @@ spec:
         MonitorSubscribeLatency:
           enabled: false
     rest:
-      env:
-        HIERO_MIRROR_REST_RESPONSE_INCLUDEADMINKEY: "true"
       monitor:
         config:
           contract:
@@ -72,12 +70,21 @@ spec:
         persistentVolume:
           size: 65Gi
       worker:
+        overrides:
+          - index: 0
+            pods:
+              persistentVolume:
+                size: 400Gi
+          - index: 1
+            pods:
+              persistentVolume:
+                size: 180Gi
+          - index: 2
+            pods:
+              persistentVolume:
+                size: 600Gi
         persistentVolume:
-          size: 90Gi
+          size: 180Gi
     test:
       cucumberTags: "@acceptance and not @estimateprecompile"
       enabled: true
-    web3:
-      env:
-        HIERO_MIRROR_WEB3_EVM_MODULARIZEDSERVICES: "true"
-        HIERO_MIRROR_WEB3_EVM_MODULARIZEDTRAFFICPERCENT: "1"

@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-v2.yaml
-      version: '0.137.0-rc2'
+      version: '0.144.0-rc2'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -85,5 +85,4 @@ spec:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod-new"} } }'
     zfs:
       coordinator:
-        initialDiskSize: 200GB
-
+        initialDiskSize: 400GB
