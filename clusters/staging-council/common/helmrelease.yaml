@@ -85,4 +85,8 @@ spec:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod-new"} } }'
     zfs:
       coordinator:
-        initialDiskSize: 400GB
+        initialDiskSize: 75GB
+      init:
+        diskPrefix: staging-council
+      worker:
+        initialDiskSize: 100GB
