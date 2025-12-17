@@ -14,9 +14,6 @@ spec:
         - values.yaml
         - values-v2.yaml
       version: "0.143.0-rc2"
-  dependsOn:
-    - name: testkube
-      namespace: testkube
   driftDetection:
     mode: enabled
     ignore:
