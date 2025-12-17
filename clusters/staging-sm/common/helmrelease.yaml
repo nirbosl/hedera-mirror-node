@@ -59,11 +59,6 @@ spec:
                   regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
-          resources:
-            limits:
-              memory: 8Gi
-            requests:
-              memory: 4Gi
           storageSpec:
             volumeClaimTemplate:
               spec:
@@ -76,6 +71,6 @@ spec:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-staging-sm"} } }'
     zfs:
       coordinator:
-        initialDiskSize: 400GB
+        initialDiskSize: 100GB
       init:
         diskPrefix: staging-sm
