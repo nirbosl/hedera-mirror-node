@@ -59,16 +59,10 @@ spec:
                   regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
-    testkube:
-      enabled: true
-      test:
-        gitBranch: main
-        target:
-          namespace: performance
     traefik:
       service:
         annotations:
-          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod-new"} } }'
+          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-staging-council"} } }'
     zfs:
       coordinator:
         initialDiskSize: 75GB
