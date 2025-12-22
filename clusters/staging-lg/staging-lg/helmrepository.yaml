@@ -1,7 +1,7 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: hedera-mirror-node
+  name: mirror
   namespace: staging-lg
 spec:
   interval: 5m
