@@ -59,6 +59,8 @@ spec:
       monitor:
         test:
           enabled: false
+      test:
+        enabled: false
     stackgres:
       backup:
         enabled: false
@@ -88,7 +90,7 @@ spec:
           mirror:
             test:
               acceptance:
-                network: OTHER
+                network: MAINNET
       cucumberTags: "@critical"
       enabled: true
     web3:
