@@ -8,7 +8,7 @@ metadata:
 spec:
   interval: 1m0s
   ref:
-    branch: standalone-staging-lg
+    branch: deploy
   secretRef:
     name: flux-system
   url: ssh://git@github.com/hiero-ledger/hiero-mirror-node
