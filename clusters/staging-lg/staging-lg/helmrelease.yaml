@@ -19,7 +19,6 @@ spec:
     - name: mirror
       namespace: common
   driftDetection:
-  driftDetection:
     ignore:
       - paths:
           - /spec/scripts
