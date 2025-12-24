@@ -87,7 +87,6 @@ spec:
                 network: MAINNET
       cucumberTags: "@critical"
       enabled: true
-
     web3:
       env:
         HIERO_MIRROR_WEB3_EVM_NETWORK: OTHER
