@@ -11,5 +11,5 @@ spec:
     - kind: Kustomization
       name: '*'
       namespace: flux-system
-  summary: "Pre-prod cluster"
+  summary: "Staging-council cluster"
 
