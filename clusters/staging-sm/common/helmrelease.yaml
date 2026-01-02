@@ -13,10 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-v2.yaml
-      version: '0.145.0-rc1'
-  dependsOn:
-    - name: testkube
-      namespace: testkube
+      version: '>0.0.0'
   driftDetection:
     mode: enabled
     ignore:
@@ -44,7 +41,7 @@ spec:
       prometheus:
         prometheusSpec:
           externalLabels:
-            cluster: preprod
+            cluster: staging-sm
           remoteWrite:
             - basicAuth:
                 password:
@@ -62,27 +59,18 @@ spec:
                   regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
-          resources:
-            limits:
-              memory: 8Gi
-            requests:
-              memory: 4Gi
           storageSpec:
             volumeClaimTemplate:
               spec:
                 resources:
                   requests:
                     storage: 250Gi
-    testkube:
-      enabled: true
-      test:
-        gitBranch: main
-        target:
-          namespace: performance
     traefik:
       service:
         annotations:
-          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod-new"} } }'
+          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-staging-sm"} } }'
     zfs:
       coordinator:
-        initialDiskSize: 400GB
+        initialDiskSize: 75GB
+      init:
+        diskPrefix: staging-sm

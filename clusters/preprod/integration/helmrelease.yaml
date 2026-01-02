@@ -37,7 +37,7 @@ spec:
       image:
         pullPolicy: Always
       podAnnotations:
-        git.commit: 574802814799312bb6114da6708eed3fd56d4ae6
+        git.commit: f7c31834035764a27128bd6e1bf763d057d58d92
     graphql:
       enabled: true
     importer:
@@ -59,6 +59,9 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    restjava:
+      routes:
+        supply: true
     rosetta:
       enabled: true
     test:
@@ -68,11 +71,5 @@ spec:
             test:
               acceptance:
                 network: OTHER
-                web3:
-                  modularizedServices: true
       enabled: true
-    web3:
-      env:
-        HIERO_MIRROR_WEB3_EVM_MODULARIZEDTRAFFICPERCENT: "1.0"
-        HIERO_MIRROR_WEB3_EVM_MODULARIZEDSERVICES: "true"
 
