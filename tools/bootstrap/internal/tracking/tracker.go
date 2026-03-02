@@ -41,9 +41,9 @@ type TrackingData map[string]FileStatus
 
 // Tracker manages import status tracking with JSON file storage.
 type Tracker struct {
-	path  string
-	mu    sync.RWMutex
-	data  TrackingData
+	path string
+	mu   sync.RWMutex
+	data TrackingData
 }
 
 // NewTracker creates a new Tracker for the given tracking file path.

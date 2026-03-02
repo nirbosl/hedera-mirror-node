@@ -446,4 +446,3 @@ func BenchmarkGetAllStatuses(b *testing.B) {
 		tracker.GetAllStatuses()
 	}
 }
-

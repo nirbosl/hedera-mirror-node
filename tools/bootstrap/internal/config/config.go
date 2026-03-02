@@ -21,28 +21,28 @@ type Config struct {
 	PGDatabase string
 
 	// GCP settings
-	IsGCPCloudSQL     bool
+	IsGCPCloudSQL       bool
 	CreateMirrorAPIUser bool
 
 	// User passwords
-	GraphQLPassword   string
-	GRPCPassword      string
-	ImporterPassword  string
-	OwnerPassword     string
-	RESTPassword      string
-	RESTJavaPassword  string
-	RosettaPassword   string
-	Web3Password      string
+	GraphQLPassword  string
+	GRPCPassword     string
+	ImporterPassword string
+	OwnerPassword    string
+	RESTPassword     string
+	RESTJavaPassword string
+	RosettaPassword  string
+	Web3Password     string
 
 	// Import settings
 	DecompressorThreads int
 	MaxJobs             int // parallel imports
 
 	// Paths
-	DataDir       string
-	ManifestFile  string
-	TrackingFile  string
-	ProgressFile  string
+	DataDir      string
+	ManifestFile string
+	TrackingFile string
+	ProgressFile string
 }
 
 // DefaultConfig returns a Config with sensible defaults.

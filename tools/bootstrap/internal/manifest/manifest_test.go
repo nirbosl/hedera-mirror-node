@@ -294,8 +294,8 @@ func TestExtractTableName(t *testing.T) {
 		{"schema.sql.gz", "schema.sql"},
 		// Edge cases
 		{"file_pXXXX_01.csv.gz", "file_pXXXX_01"}, // Non-digit after _p
-		{"simple.csv", "simple"},                   // .csv without .gz
-		{"simple", "simple"},                       // No extension
+		{"simple.csv", "simple"},                  // .csv without .gz
+		{"simple", "simple"},                      // No extension
 	}
 
 	for _, tc := range tests {
@@ -474,4 +474,3 @@ transaction_p2023_10.csv.gz,200,300,ghi
 		m.FilterByTable("account_balance")
 	}
 }
-

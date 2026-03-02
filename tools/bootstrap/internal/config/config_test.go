@@ -410,4 +410,3 @@ export     =spacey
 		t.Errorf("Expected PGUser=valid, got %s", cfg.PGUser)
 	}
 }
-

@@ -27,15 +27,15 @@ type FileProgress struct {
 
 // Monitor tracks import progress and calculates rates.
 type Monitor struct {
-	conn        *pgx.Conn
-	connMu      sync.Mutex // serializes all conn.Exec/Query calls
-	interval    time.Duration
-	dbTable     string // temporary progress table name
-	mu          sync.Mutex
-	lastState   map[string]progressState
-	lastUpdate  time.Time
+	conn         *pgx.Conn
+	connMu       sync.Mutex // serializes all conn.Exec/Query calls
+	interval     time.Duration
+	dbTable      string // temporary progress table name
+	mu           sync.Mutex
+	lastState    map[string]progressState
+	lastUpdate   time.Time
 	progressFile string
-	printer     *message.Printer
+	printer      *message.Printer
 }
 
 type progressState struct {
@@ -46,12 +46,12 @@ type progressState struct {
 // NewMonitor creates a new progress monitor.
 func NewMonitor(conn *pgx.Conn, interval time.Duration, progressFile string) *Monitor {
 	return &Monitor{
-		conn:        conn,
-		interval:    interval,
-		dbTable:     "bootstrap_manifest_progress",
-		lastState:   make(map[string]progressState),
+		conn:         conn,
+		interval:     interval,
+		dbTable:      "bootstrap_manifest_progress",
+		lastState:    make(map[string]progressState),
 		progressFile: progressFile,
-		printer:     message.NewPrinter(language.English),
+		printer:      message.NewPrinter(language.English),
 	}
 }
 

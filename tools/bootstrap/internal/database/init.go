@@ -223,7 +223,7 @@ func verifyTables(ctx context.Context, cfg InitConfig) error {
 	var missing []string
 	for _, table := range coreTables {
 		var exists bool
-		err := conn.QueryRow(ctx, 
+		err := conn.QueryRow(ctx,
 			"SELECT EXISTS(SELECT 1 FROM pg_class WHERE relname = $1 AND relnamespace = 'public'::regnamespace)",
 			table).Scan(&exists)
 		if err != nil || !exists {
@@ -252,7 +252,7 @@ func TestConnection(ctx context.Context, connString string) error {
 // GetTableCount returns the number of tables in the public schema.
 func GetTableCount(ctx context.Context, conn *pgx.Conn) (int, error) {
 	var count int
-	err := conn.QueryRow(ctx, 
+	err := conn.QueryRow(ctx,
 		"SELECT COUNT(*) FROM pg_class WHERE relnamespace = 'public'::regnamespace AND relkind = 'r'").Scan(&count)
 	return count, err
 }

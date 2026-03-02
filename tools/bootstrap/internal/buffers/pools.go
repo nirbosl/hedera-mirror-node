@@ -27,10 +27,10 @@ var (
 
 // Pool statistics for monitoring
 var (
-	decompressPoolGets  int64
-	copyPoolGets        int64
-	lineBufferPoolGets  int64
-	rowBufferPoolGets   int64
+	decompressPoolGets    int64
+	copyPoolGets          int64
+	lineBufferPoolGets    int64
+	rowBufferPoolGets     int64
 	rowBufferDirectAllocs int64
 )
 
@@ -202,14 +202,14 @@ func RotatePools() {
 
 // Stats returns current buffer pool statistics.
 type Stats struct {
-	DecompressGets     int64
-	CopyGets           int64
-	LineBufferGets     int64
-	RowBufferGets      int64
-	RowBufferDirect    int64
-	RowsSinceRotation  int64
-	RotationCount      int64
-	LastRotation       time.Time
+	DecompressGets    int64
+	CopyGets          int64
+	LineBufferGets    int64
+	RowBufferGets     int64
+	RowBufferDirect   int64
+	RowsSinceRotation int64
+	RotationCount     int64
+	LastRotation      time.Time
 }
 
 // GetStats returns current pool statistics for monitoring.

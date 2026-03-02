@@ -43,7 +43,8 @@ This tool imports large CSV data exports into PostgreSQL using parallel workers,
 ## Package Structure
 
 ```
-cmd/mirrornode-bootstrap/     # CLI entry point
+main.go                       # CLI entry point
+cmd/                          # Cobra commands
 internal/
 ├── buffers/                  # sync.Pool for reusable byte slices
 ├── config/                   # Environment/config file parsing
@@ -194,25 +195,25 @@ go mod tidy
 ### Build for Linux x86_64
 
 ```bash
-GOOS=linux GOARCH=amd64 go build -o bootstrap ./cmd/mirrornode-bootstrap/
+GOOS=linux GOARCH=amd64 go build -o bootstrap .
 ```
 
 ### Build for macOS x86_64 (Intel)
 
 ```bash
-GOOS=darwin GOARCH=amd64 go build -o bootstrap ./cmd/mirrornode-bootstrap/
+GOOS=darwin GOARCH=amd64 go build -o bootstrap .
 ```
 
 ### Build for macOS ARM64 (Apple Silicon)
 
 ```bash
-GOOS=darwin GOARCH=arm64 go build -o bootstrap ./cmd/mirrornode-bootstrap/
+GOOS=darwin GOARCH=arm64 go build -o bootstrap .
 ```
 
 ### Build for current platform
 
 ```bash
-go build -o bootstrap ./cmd/mirrornode-bootstrap/
+go build -o bootstrap .
 ```
 
 ## Testing

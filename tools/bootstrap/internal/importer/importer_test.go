@@ -70,10 +70,10 @@ func TestIsPartitioned(t *testing.T) {
 		{"entity.csv.gz", false},
 		{"transaction_p2023_10.csv.gz", true},
 		// Edge cases - invalid partition patterns
-		{"file_p2024.csv.gz", false},        // Missing month
-		{"file_p24_01.csv.gz", false},       // Short year
-		{"file_pXXXX_01.csv.gz", false},     // Non-numeric year
-		{"file_p2024_13.csv.gz", true},      // Month 13 (still matches pattern)
+		{"file_p2024.csv.gz", false},    // Missing month
+		{"file_p24_01.csv.gz", false},   // Short year
+		{"file_pXXXX_01.csv.gz", false}, // Non-numeric year
+		{"file_p2024_13.csv.gz", true},  // Month 13 (still matches pattern)
 		{"token_balance_p2019_01.csv.gz", true},
 	}
 
@@ -119,10 +119,10 @@ func TestParseHeaderToColumns(t *testing.T) {
 		{"single\n", `"single"`},
 		{"col_with_underscore,another_one\n", `"col_with_underscore","another_one"`},
 		// Edge cases
-		{"a,b,c", `"a","b","c"`},   // No newline
-		{"\n", `""`},               // Just newline
-		{"", `""`},                 // Empty
-		{"col1\r", `"col1"`},       // Just CR
+		{"a,b,c", `"a","b","c"`},     // No newline
+		{"\n", `""`},                 // Just newline
+		{"", `""`},                   // Empty
+		{"col1\r", `"col1"`},         // Just CR
 		{"a,b,c\r\n", `"a","b","c"`}, // CRLF
 	}
 
@@ -289,4 +289,3 @@ func BenchmarkTrimRight(b *testing.B) {
 		trimRight(data, '\r', '\n')
 	}
 }
-

@@ -109,7 +109,7 @@ func TestDownloadInitScript_InvalidURL(t *testing.T) {
 func TestInitialize_SkipsWhenFlagExists(t *testing.T) {
 	// Create temp directory for logs
 	logsDir := t.TempDir()
-	
+
 	// Create the skip flag
 	flagPath := filepath.Join(logsDir, SkipDBInitFlag)
 	if err := os.WriteFile(flagPath, []byte("initialized"), 0644); err != nil {
@@ -135,8 +135,8 @@ func TestInitialize_MissingSchemaFile(t *testing.T) {
 	dataDir := t.TempDir()
 
 	cfg := InitConfig{
-		LogsDir:   logsDir,
-		DataDir:   dataDir,
+		LogsDir:    logsDir,
+		DataDir:    dataDir,
 		SchemaFile: "", // Will look for schema.sql in DataDir
 	}
 
@@ -227,7 +227,7 @@ func TestRunInitScript_EnvVars(t *testing.T) {
 	// Create a script that echoes env vars
 	tmpDir := t.TempDir()
 	scriptPath := filepath.Join(tmpDir, "test_env.sh")
-	
+
 	// Script that checks for required env vars
 	script := `#!/bin/bash
 if [ -z "$PGHOST" ]; then exit 1; fi
@@ -260,7 +260,7 @@ exit 0
 func TestRunInitScript_Timeout(t *testing.T) {
 	tmpDir := t.TempDir()
 	scriptPath := filepath.Join(tmpDir, "slow_script.sh")
-	
+
 	// Script that sleeps for 5 seconds
 	script := "#!/bin/bash\nsleep 5\n"
 	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
@@ -282,7 +282,7 @@ func TestRunInitScript_Timeout(t *testing.T) {
 func TestRunInitScript_ScriptFails(t *testing.T) {
 	tmpDir := t.TempDir()
 	scriptPath := filepath.Join(tmpDir, "failing_script.sh")
-	
+
 	script := "#!/bin/bash\necho 'error message' >&2\nexit 1\n"
 	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
 		t.Fatalf("Failed to create test script: %v", err)

@@ -33,7 +33,7 @@ var (
 type ImportResult struct {
 	RowsImported int64
 	BytesRead    int64
-	ActualSize   int64  // Actual file size (for size mismatch reporting)
+	ActualSize   int64 // Actual file size (for size mismatch reporting)
 	TableName    string
 	ActualHash   string // BLAKE3 hash computed during import
 	HashValid    bool   // true if hash matches expected

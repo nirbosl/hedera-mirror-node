@@ -479,4 +479,3 @@ func BenchmarkWriteProgressFile(b *testing.B) {
 		m.WriteProgressFile(progresses)
 	}
 }
-

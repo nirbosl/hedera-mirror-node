@@ -331,4 +331,3 @@ func BenchmarkDirectAllocation1K(b *testing.B) {
 		_ = buf
 	}
 }
-

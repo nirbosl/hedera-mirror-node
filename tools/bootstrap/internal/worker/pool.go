@@ -46,7 +46,7 @@ func NewPool(ctx context.Context, workers int) *Pool {
 	ctx, cancel := context.WithCancel(ctx)
 	return &Pool{
 		workers: workers,
-		jobs:    make(chan Job, workers*2),      // Buffered for smooth flow
+		jobs:    make(chan Job, workers*2), // Buffered for smooth flow
 		results: make(chan Result, workers*2),
 		ctx:     ctx,
 		cancel:  cancel,
@@ -74,7 +74,7 @@ func (p *Pool) Start(processor func(context.Context, Job) Result) {
 					// Send result (may block if results buffer full)
 					select {
 					case p.results <- result:
-						
+
 					case <-p.ctx.Done():
 						return
 					}
