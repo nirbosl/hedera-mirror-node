@@ -87,15 +87,15 @@ func runInit(ctx context.Context, dataDir, schemaFile string) error {
 				if err != nil {
 					return fmt.Errorf("failed to open schema.sql.gz: %w", err)
 				}
+				defer file.Close()
+
 				hasher := blake3.New()
 				buf := buffers.GetDecompressBuffer()
+				defer buffers.ReturnDecompressBuffer(buf)
+
 				if _, err := io.CopyBuffer(hasher, file, buf); err != nil {
-					file.Close()
-					buffers.ReturnDecompressBuffer(buf)
 					return fmt.Errorf("failed to hash schema.sql.gz: %w", err)
 				}
-				file.Close()
-				buffers.ReturnDecompressBuffer(buf)
 
 				actualHash := fmt.Sprintf("%x", hasher.Sum(nil))
 				if actualHash != entry.Blake3Hash {

@@ -137,16 +137,16 @@ Build for your target platform:
 
 ```bash
 # Current platform (build and run locally)
-go build -o bootstrap ./cmd/mirrornode-bootstrap/
+go build -o bootstrap .
 
 # Linux x86_64
-GOOS=linux GOARCH=amd64 go build -o bootstrap ./cmd/mirrornode-bootstrap/
+GOOS=linux GOARCH=amd64 go build -o bootstrap .
 
 # macOS x86_64 (Intel)
-GOOS=darwin GOARCH=amd64 go build -o bootstrap ./cmd/mirrornode-bootstrap/
+GOOS=darwin GOARCH=amd64 go build -o bootstrap .
 
 # macOS ARM64 (Apple Silicon)
-GOOS=darwin GOARCH=arm64 go build -o bootstrap ./cmd/mirrornode-bootstrap/
+GOOS=darwin GOARCH=arm64 go build -o bootstrap .
 ```
 
 Verify the binary (if built for current platform):

@@ -119,6 +119,12 @@ func runImport(ctx context.Context, dataDir, manifestFile string, maxJobs int) e
 
 	// Discrepancy file path - only created if there are mismatches
 	discrepancyPath := filepath.Join(logsDir, "bootstrap_discrepancies.log")
+	var discrepancyFile *os.File
+	defer func() {
+		if discrepancyFile != nil {
+			discrepancyFile.Close()
+		}
+	}()
 
 	logger.Info("Starting import",
 		"data_dir", dataDir,
@@ -477,11 +483,6 @@ func runImport(ctx context.Context, dataDir, manifestFile string, maxJobs int) e
 					result.Job.Filename, result.ExpectedRows, result.RowsImported)
 			}
 		}
-	}
-
-	// Close discrepancy file if it was opened
-	if discrepancyFile != nil {
-		discrepancyFile.Close()
 	}
 
 	// Check if we were interrupted
