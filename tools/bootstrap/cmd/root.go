@@ -36,15 +36,10 @@ var rootCmd = &cobra.Command{
 	},
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		var err error
-		if cfgFile != "" {
-			cfg, err = config.LoadFromEnvFile(cfgFile)
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-		} else {
-			cfg = config.DefaultConfig()
+		cfg, err = config.LoadFromEnvFile(cfgFile)
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
 		}
-		cfg.LoadFromEnv()
 		return nil
 	},
 }

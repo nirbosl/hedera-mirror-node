@@ -4,45 +4,44 @@
 package config
 
 import (
-	"bufio"
 	"fmt"
+	"github.com/spf13/viper"
 	"os"
-	"strconv"
 	"strings"
 )
 
 // Config holds all configuration values for the bootstrap process.
 type Config struct {
 	// PostgreSQL connection
-	PGHost     string
-	PGPort     string
-	PGUser     string
-	PGPassword string
-	PGDatabase string
+	PGHost     string `mapstructure:"PGHOST"`
+	PGPort     string `mapstructure:"PGPORT"`
+	PGUser     string `mapstructure:"PGUSER"`
+	PGPassword string `mapstructure:"PGPASSWORD"`
+	PGDatabase string `mapstructure:"PGDATABASE"`
 
 	// GCP settings
-	IsGCPCloudSQL       bool
-	CreateMirrorAPIUser bool
+	IsGCPCloudSQL       bool `mapstructure:"IS_GCP_CLOUD_SQL"`
+	CreateMirrorAPIUser bool `mapstructure:"CREATE_MIRROR_API_USER"`
 
 	// User passwords
-	GraphQLPassword  string
-	GRPCPassword     string
-	ImporterPassword string
-	OwnerPassword    string
-	RESTPassword     string
-	RESTJavaPassword string
-	RosettaPassword  string
-	Web3Password     string
+	GraphQLPassword  string `mapstructure:"GRAPHQL_PASSWORD"`
+	GRPCPassword     string `mapstructure:"GRPC_PASSWORD"`
+	ImporterPassword string `mapstructure:"IMPORTER_PASSWORD"`
+	OwnerPassword    string `mapstructure:"OWNER_PASSWORD"`
+	RESTPassword     string `mapstructure:"REST_PASSWORD"`
+	RESTJavaPassword string `mapstructure:"REST_JAVA_PASSWORD"`
+	RosettaPassword  string `mapstructure:"ROSETTA_PASSWORD"`
+	Web3Password     string `mapstructure:"WEB3_PASSWORD"`
 
 	// Import settings
-	DecompressorThreads int
-	MaxJobs             int // parallel imports
+	DecompressorThreads int `mapstructure:"DECOMPRESSOR_THREADS"`
+	MaxJobs             int `mapstructure:"MAX_JOBS"`
 
 	// Paths
-	DataDir      string
-	ManifestFile string
-	TrackingFile string
-	ProgressFile string
+	DataDir      string `mapstructure:"DATA_DIR"`
+	ManifestFile string `mapstructure:"MANIFEST_FILE"`
+	TrackingFile string `mapstructure:"TRACKING_FILE"`
+	ProgressFile string `mapstructure:"PROGRESS_FILE"`
 }
 
 // DefaultConfig returns a Config with sensible defaults.
@@ -52,8 +51,8 @@ func DefaultConfig() *Config {
 		PGPort:              "5432",
 		PGUser:              "postgres",
 		PGDatabase:          "mirror_node",
-		IsGCPCloudSQL:       false, // Default false
-		CreateMirrorAPIUser: true,  // Default true
+		IsGCPCloudSQL:       false,
+		CreateMirrorAPIUser: true,
 		DecompressorThreads: 4,
 		MaxJobs:             8,
 		TrackingFile:        "tracking.json",
@@ -61,122 +60,119 @@ func DefaultConfig() *Config {
 	}
 }
 
-// LoadFromEnvFile loads config from a bootstrap.env file.
-// The file should contain lines like: export VAR="value"
+// LoadFromEnvFile loads config from a bootstrap.env file, using viper.
 func LoadFromEnvFile(path string) (*Config, error) {
-	cfg := DefaultConfig()
+	v := viper.New()
 
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open config file: %w", err)
-	}
-	defer file.Close()
-
-	envVars := make(map[string]string)
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-
-		// Skip comments and empty lines
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
+	// Set defaults
+	v.SetDefault("PGHOST", "localhost")
+	v.SetDefault("PGPORT", "5432")
+	v.SetDefault("PGUSER", "postgres")
+	v.SetDefault("PGDATABASE", "mirror_node")
+	v.SetDefault("IS_GCP_CLOUD_SQL", false)
+	v.SetDefault("CREATE_MIRROR_API_USER", true)
+	v.SetDefault("DECOMPRESSOR_THREADS", 4)
+	v.SetDefault("MAX_JOBS", 8)
+	v.SetDefault("TRACKING_FILE", "tracking.json")
+	v.SetDefault("PROGRESS_FILE", "progress.txt")
+	// Bind to environment variables, then overlay with file if provided
+	v.AutomaticEnv()
+	if path != "" {
+		info, err := os.Stat(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open config file: %w", err)
 		}
-
-		// Parse export VAR="value" or VAR="value"
-		line = strings.TrimPrefix(line, "export ")
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-
-		// Remove surrounding quotes
-		value = strings.Trim(value, `"'`)
-
-		envVars[key] = value
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading config file: %w", err)
-	}
-
-	// Map env vars to config
-	if v, ok := envVars["PGHOST"]; ok {
-		cfg.PGHost = v
-	}
-	if v, ok := envVars["PGPORT"]; ok {
-		cfg.PGPort = v
-	}
-	if v, ok := envVars["PGUSER"]; ok {
-		cfg.PGUser = v
-	}
-	if v, ok := envVars["PGPASSWORD"]; ok {
-		cfg.PGPassword = v
-	}
-	if v, ok := envVars["PGDATABASE"]; ok {
-		cfg.PGDatabase = v
-	}
-	if v, ok := envVars["IS_GCP_CLOUD_SQL"]; ok {
-		cfg.IsGCPCloudSQL = strings.ToLower(v) == "true"
-	}
-	if v, ok := envVars["CREATE_MIRROR_API_USER"]; ok {
-		cfg.CreateMirrorAPIUser = strings.ToLower(v) == "true"
-	}
-	if v, ok := envVars["GRAPHQL_PASSWORD"]; ok {
-		cfg.GraphQLPassword = v
-	}
-	if v, ok := envVars["GRPC_PASSWORD"]; ok {
-		cfg.GRPCPassword = v
-	}
-	if v, ok := envVars["IMPORTER_PASSWORD"]; ok {
-		cfg.ImporterPassword = v
-	}
-	if v, ok := envVars["OWNER_PASSWORD"]; ok {
-		cfg.OwnerPassword = v
-	}
-	if v, ok := envVars["REST_PASSWORD"]; ok {
-		cfg.RESTPassword = v
-	}
-	if v, ok := envVars["REST_JAVA_PASSWORD"]; ok {
-		cfg.RESTJavaPassword = v
-	}
-	if v, ok := envVars["ROSETTA_PASSWORD"]; ok {
-		cfg.RosettaPassword = v
-	}
-	if v, ok := envVars["WEB3_PASSWORD"]; ok {
-		cfg.Web3Password = v
-	}
-	if v, ok := envVars["DECOMPRESSOR_THREADS"]; ok {
-		if i, err := strconv.Atoi(v); err == nil {
-			cfg.DecompressorThreads = i
+		if info.Size() > 0 {
+			v.SetConfigFile(path)
+			v.SetConfigType("env")
+			if err := v.ReadInConfig(); err != nil {
+				// Fallback to manual parsing if godotenv fails on malformed lines
+				_ = err
+				manualParse(v, path)
+			}
 		}
 	}
-	if v, ok := envVars["MAX_JOBS"]; ok {
-		if i, err := strconv.Atoi(v); err == nil {
-			cfg.MaxJobs = i
+
+	cfg := &Config{}
+
+	// Fallback to manual population if Viper fails type conversion
+	if err := v.Unmarshal(cfg); err != nil {
+		if strings.Contains(err.Error(), "cannot parse value") {
+			cfg = DefaultConfig()
+			manualPopulate(v, cfg)
+		} else {
+			return nil, fmt.Errorf("unable to decode config into struct: %w", err)
 		}
-	}
-	if v, ok := envVars["DATA_DIR"]; ok {
-		cfg.DataDir = v
-	}
-	if v, ok := envVars["MANIFEST_FILE"]; ok {
-		cfg.ManifestFile = v
-	}
-	if v, ok := envVars["TRACKING_FILE"]; ok {
-		cfg.TrackingFile = v
-	}
-	if v, ok := envVars["PROGRESS_FILE"]; ok {
-		cfg.ProgressFile = v
 	}
 
 	return cfg, nil
 }
 
-// LoadFromEnv loads config from current environment variables.
-// Overlays on top of existing config.
+// manualParse reads an env file line by line, bypassing viper's strict godotenv parser.
+func manualParse(v *viper.Viper, path string) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		line = strings.TrimPrefix(line, "export ")
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			if key == "" {
+				continue
+			}
+			val := strings.TrimSpace(parts[1])
+			val = strings.Trim(val, `"'`)
+			v.Set(key, val)
+		}
+	}
+}
+
+// manualPopulate fills the struct from viper, ignoring type errors for ints by using defaults.
+func manualPopulate(v *viper.Viper, cfg *Config) {
+	cfg.PGHost = v.GetString("PGHOST")
+	cfg.PGPort = v.GetString("PGPORT")
+	cfg.PGUser = v.GetString("PGUSER")
+	cfg.PGPassword = v.GetString("PGPASSWORD")
+	cfg.PGDatabase = v.GetString("PGDATABASE")
+	cfg.IsGCPCloudSQL = v.GetBool("IS_GCP_CLOUD_SQL")
+	cfg.CreateMirrorAPIUser = v.GetBool("CREATE_MIRROR_API_USER")
+	cfg.GraphQLPassword = v.GetString("GRAPHQL_PASSWORD")
+	cfg.GRPCPassword = v.GetString("GRPC_PASSWORD")
+	cfg.ImporterPassword = v.GetString("IMPORTER_PASSWORD")
+	cfg.OwnerPassword = v.GetString("OWNER_PASSWORD")
+	cfg.RESTPassword = v.GetString("REST_PASSWORD")
+	cfg.RESTJavaPassword = v.GetString("REST_JAVA_PASSWORD")
+	cfg.RosettaPassword = v.GetString("ROSETTA_PASSWORD")
+	cfg.Web3Password = v.GetString("WEB3_PASSWORD")
+	cfg.DataDir = v.GetString("DATA_DIR")
+	cfg.ManifestFile = v.GetString("MANIFEST_FILE")
+	cfg.TrackingFile = v.GetString("TRACKING_FILE")
+	cfg.ProgressFile = v.GetString("PROGRESS_FILE")
+
+	if val := v.GetInt("DECOMPRESSOR_THREADS"); val != 0 {
+		cfg.DecompressorThreads = val
+	}
+	if val := v.GetInt("MAX_JOBS"); val != 0 {
+		cfg.MaxJobs = val
+	}
+}
+
+// LoadFromEnv is maintained for backward compatibility with the CLI.
+// Environment variable overlaying is mostly handled automatically by Viper now,
+// but we keep this method signature so cmd/root.go still compiles cleanly.
 func (c *Config) LoadFromEnv() {
+	// Re-applying explicitly isn't needed with viper.AutomaticEnv(),
+	// but we keep the method as a no-op to avoid breaking caller API,
+	// or we can explicitly reload specific vars if we wanted to guarantee precedence.
+
+	// For strict compatibility with old behavior where LoadFromEnv overrides regardless:
 	if v := os.Getenv("PGHOST"); v != "" {
 		c.PGHost = v
 	}
@@ -199,8 +195,9 @@ func (c *Config) LoadFromEnv() {
 		c.ManifestFile = v
 	}
 	if v := os.Getenv("MAX_JOBS"); v != "" {
-		if i, _ := strconv.Atoi(v); i > 0 {
-			c.MaxJobs = i
+		var dummy int
+		if _, err := fmt.Sscanf(v, "%d", &dummy); err == nil && dummy > 0 {
+			c.MaxJobs = dummy
 		}
 	}
 }
