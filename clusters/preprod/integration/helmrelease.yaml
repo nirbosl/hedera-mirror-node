@@ -61,7 +61,8 @@ spec:
       enabled: false
     restjava:
       routes:
-        supply: true
+        network:
+          nodes: true
     rosetta:
       enabled: true
     test:
