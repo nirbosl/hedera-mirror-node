@@ -5,6 +5,7 @@ package org.hiero.mirror.common.domain.node;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -26,12 +27,6 @@ public class RegisteredServiceEndpoint {
     private boolean requiresTls;
     private RpcRelayEndpoint rpcRelay;
 
-    @Data
-    @Builder
-    public static class BlockNodeEndpoint {
-        private BlockNodeApi endpointApi;
-    }
-
     public enum BlockNodeApi {
         OTHER,
         STATUS,
@@ -39,6 +34,12 @@ public class RegisteredServiceEndpoint {
         SUBSCRIBE_STREAM,
         STATE_PROOF,
         UNRECOGNIZED
+    }
+
+    @Data
+    @Builder
+    public static class BlockNodeEndpoint {
+        private List<BlockNodeApi> endpointApis;
     }
 
     @Data
