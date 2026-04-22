@@ -1,6 +1,6 @@
 # Grafana-Cloud Alert Rules
 
-`rules.tf` in this directory is the source of truth for the Grafana Cloud alert rules.
+`charts/hedera-mirror-common/alerts/rules.tf` is the source of truth for the Grafana Cloud alert rules.
 A Jenkins pipeline in the devops infra repo polls this file via the GitHub API every 5 minutes, runs `terraform plan` against a Terraform Cloud workspace, and applies anything that changed.
 
 ## Making a change
