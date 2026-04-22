@@ -1,6 +1,7 @@
 resource "grafana_rule_group" "rule_group_5bf8ee7b5c98da5e" {
-  org_id           = 1
-  name             = "Grpc"
+  disable_provenance = true
+  org_id             = 1
+  name               = "Grpc"
   folder_uid       = "ed3d21bc-0684-4f81-a791-f2787cca85c3"
   interval_seconds = 60
 
@@ -271,8 +272,9 @@ resource "grafana_rule_group" "rule_group_5bf8ee7b5c98da5e" {
   }
 }
 resource "grafana_rule_group" "rule_group_b56cf69bf40c913c" {
-  org_id           = 1
-  name             = "Importer"
+  disable_provenance = true
+  org_id             = 1
+  name               = "Importer"
   folder_uid       = "ed3d21bc-0684-4f81-a791-f2787cca85c3"
   interval_seconds = 60
 
@@ -883,8 +885,9 @@ resource "grafana_rule_group" "rule_group_b56cf69bf40c913c" {
   }
 }
 resource "grafana_rule_group" "rule_group_f04e3f23ed64f10a" {
-  org_id           = 1
-  name             = "Monitor"
+  disable_provenance = true
+  org_id             = 1
+  name               = "Monitor"
   folder_uid       = "ed3d21bc-0684-4f81-a791-f2787cca85c3"
   interval_seconds = 60
 
@@ -1187,8 +1190,9 @@ resource "grafana_rule_group" "rule_group_f04e3f23ed64f10a" {
   }
 }
 resource "grafana_rule_group" "rule_group_2612cf19d5434cb4" {
-  org_id           = 1
-  name             = "Rest"
+  disable_provenance = true
+  org_id             = 1
+  name               = "Rest"
   folder_uid       = "ed3d21bc-0684-4f81-a791-f2787cca85c3"
   interval_seconds = 60
 
@@ -1311,8 +1315,9 @@ resource "grafana_rule_group" "rule_group_2612cf19d5434cb4" {
   }
 }
 resource "grafana_rule_group" "rule_group_c0dfb8053db641fc" {
-  org_id           = 1
-  name             = "RestJava"
+  disable_provenance = true
+  org_id             = 1
+  name               = "RestJava"
   folder_uid       = "ed3d21bc-0684-4f81-a791-f2787cca85c3"
   interval_seconds = 60
 
@@ -1582,8 +1587,9 @@ resource "grafana_rule_group" "rule_group_c0dfb8053db641fc" {
   }
 }
 resource "grafana_rule_group" "rule_group_5f5a0f74394b7ab3" {
-  org_id           = 1
-  name             = "Web3"
+  disable_provenance = true
+  org_id             = 1
+  name               = "Web3"
   folder_uid       = "ed3d21bc-0684-4f81-a791-f2787cca85c3"
   interval_seconds = 60
 
