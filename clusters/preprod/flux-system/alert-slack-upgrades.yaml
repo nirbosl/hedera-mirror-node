@@ -12,7 +12,7 @@ spec:
   eventSources:
     - kind: HelmChart
       name: '*'
-      namespace: flux-system
+      namespace: integration
   exclusionList:
     - .*Internal error.*
   inclusionList:
