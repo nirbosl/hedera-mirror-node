@@ -8,6 +8,5 @@ resources:
 - gotk-sync.yaml
 - provider-github.yaml
 - provider-slack.yaml
-- provider-slack-upgrades.yaml
 - sealed-secret-github.yaml
 - sealed-secret-slack.yaml

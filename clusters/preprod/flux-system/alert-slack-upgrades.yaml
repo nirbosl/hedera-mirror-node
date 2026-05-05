@@ -18,4 +18,4 @@ spec:
   inclusionList:
     - "^packaged 'hedera-mirror' chart with version"
   providerRef:
-    name: slack-upgrades
+    name: slack
