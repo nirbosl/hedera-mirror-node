@@ -1,0 +1,21 @@
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: slack-upgrades
+  namespace: flux-system
+spec:
+  eventMetadata:
+    summary: "Helm chart version upgrade started"
+    cluster: preprod
+    environment: integration
+  eventSeverity: info
+  eventSources:
+    - kind: HelmChart
+      name: '*'
+      namespace: flux-system
+  exclusionList:
+    - .*Internal error.*
+  inclusionList:
+    - "^packaged 'hedera-mirror' chart with version"
+  providerRef:
+    name: slack-upgrades
