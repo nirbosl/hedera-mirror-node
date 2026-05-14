@@ -3,9 +3,11 @@ kind: Kustomization
 resources:
 - alert-github-dispatch.yaml
 - alert-slack.yaml
+- alert-slack-upgrades.yaml
 - gotk-components.yaml
 - gotk-sync.yaml
 - provider-github-dispatch.yaml
 - provider-slack.yaml
+- provider-slack-upgrades.yaml
 - sealed-secret-github-dispatch.yaml
 - sealed-secret-slack.yaml

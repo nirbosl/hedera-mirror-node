@@ -5,17 +5,18 @@ metadata:
   namespace: flux-system
 spec:
   eventMetadata:
-    summary: "Helm chart version upgrade started"
-    cluster: preprod
-    environment: integration
+    summary: "Helm chart version upgrade started | environment: previewnet | cluster: previewnet"
   eventSeverity: info
   eventSources:
     - kind: HelmChart
       name: '*'
-      namespace: integration
+      namespace: common
+    - kind: HelmChart
+      name: '*'
+      namespace: previewnet-citus
   exclusionList:
     - .*Internal error.*
   inclusionList:
     - "^packaged 'hedera-mirror' chart with version"
   providerRef:
-    name: slack
+    name: slack-upgrades
