@@ -10,9 +10,6 @@ spec:
   eventSources:
     - kind: HelmChart
       name: '*'
-      namespace: common
-    - kind: HelmChart
-      name: '*'
       namespace: testnet-citus
   exclusionList:
     - .*Internal error.*
