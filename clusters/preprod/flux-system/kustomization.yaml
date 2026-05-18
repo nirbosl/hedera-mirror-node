@@ -3,7 +3,6 @@ kind: Kustomization
 resources:
 - alert-github.yaml
 - alert-slack.yaml
-- alert-slack-upgrades.yaml
 - gotk-components.yaml
 - gotk-sync.yaml
 - provider-github.yaml
