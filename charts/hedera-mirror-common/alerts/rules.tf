@@ -68,6 +68,11 @@ resource "grafana_notification_policy" "root" {
       match = "!~"
       value = "performance-citus"
     }
+    matcher {
+      label = "cluster"
+      match = "!~"
+      value = "staging-lg|staging-sm|staging-council"
+    }
   }
 }
 
