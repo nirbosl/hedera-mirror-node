@@ -63,6 +63,11 @@ resource "grafana_notification_policy" "root" {
       match = "="
       value = "non-prod"
     }
+    matcher {
+      label = "namespace"
+      match = "!~"
+      value = "performance-citus"
+    }
   }
 }
 
