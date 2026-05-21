@@ -42,6 +42,8 @@ spec:
           limits:
             memory: 1Gi
     prometheus:
+      alertmanager:
+        enabled: false
       prometheus:
         defaultRules:
           disabled:

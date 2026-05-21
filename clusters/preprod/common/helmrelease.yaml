@@ -41,6 +41,8 @@ spec:
     minio:
       enabled: false
     prometheus:
+      alertmanager:
+        enabled: false
       prometheus:
         prometheusSpec:
           externalLabels:

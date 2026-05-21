@@ -42,6 +42,8 @@ spec:
     minio:
       enabled: true
     prometheus:
+      alertmanager:
+        enabled: false
       defaultRules:
         disabled:
           KubeHpaMaxedOut: true
