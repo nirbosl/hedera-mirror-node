@@ -45,6 +45,7 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: preprod
+            env_category: non-prod
           remoteWrite:
             - basicAuth:
                 password:

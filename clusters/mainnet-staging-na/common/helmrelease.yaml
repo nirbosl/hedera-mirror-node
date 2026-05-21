@@ -49,6 +49,7 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: mainnet-staging
+            env_category: non-prod
           remoteWrite:
             - basicAuth:
                 password:

@@ -40,6 +40,7 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: testnet-na
+            env_category: production
           remoteWrite:
             - basicAuth:
                 password:
