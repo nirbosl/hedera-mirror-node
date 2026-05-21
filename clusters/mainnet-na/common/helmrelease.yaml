@@ -42,8 +42,6 @@ spec:
           limits:
             memory: 1Gi
     prometheus:
-      alertmanager:
-        enabled: false
       prometheus:
         defaultRules:
           disabled:
@@ -51,7 +49,6 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: mainnet-na
-            env_category: production
           priorityClassName: high
           remoteWrite:
             - basicAuth:
