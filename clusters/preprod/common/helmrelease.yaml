@@ -41,10 +41,13 @@ spec:
     minio:
       enabled: false
     prometheus:
+      alertmanager:
+        enabled: false
       prometheus:
         prometheusSpec:
           externalLabels:
             cluster: preprod
+            env_category: non-prod
           remoteWrite:
             - basicAuth:
                 password:
