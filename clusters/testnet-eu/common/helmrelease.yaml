@@ -38,10 +38,13 @@ spec:
     minio:
       enabled: true
     prometheus:
+      alertmanager:
+        enabled: false
       prometheus:
         prometheusSpec:
           externalLabels:
             cluster: testnet-eu
+            env_category: production
           remoteWrite:
             - basicAuth:
                 password:

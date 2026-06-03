@@ -36,10 +36,13 @@ spec:
           ruler:
             external_url: https://mirrornode.grafana.net
     prometheus:
+      alertmanager:
+        enabled: false
       prometheus:
         prometheusSpec:
           externalLabels:
             cluster: testnet-na
+            env_category: production
           remoteWrite:
             - basicAuth:
                 password:
