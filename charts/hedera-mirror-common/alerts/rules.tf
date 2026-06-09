@@ -310,7 +310,7 @@ resource "grafana_rule_group" "rule_group_grpc" {
     exec_err_state = "Error"
     for            = "3m"
     annotations = {
-      description = "Logs have reached {{ index $values \"A\" }} error messages/s in a 3m period"
+      description = "Logs have reached {{ printf \"%.0f\" (index $values \"A\").Value }} error messages/s in a 3m period"
       summary     = "High rate of log errors"
     }
     labels = {
@@ -676,7 +676,7 @@ resource "grafana_rule_group" "rule_group_importer" {
     exec_err_state = "Error"
     for            = "3m"
     annotations = {
-      description = "Logs have reached {{ index $values \"A\" }} error messages/s in a 3m period"
+      description = "Logs have reached {{ printf \"%.0f\" (index $values \"A\").Value }} error messages/s in a 3m period"
       summary     = "High rate of log errors"
     }
     labels = {
@@ -1076,7 +1076,7 @@ resource "grafana_rule_group" "rule_group_monitor" {
     exec_err_state = "Error"
     for            = "3m"
     annotations = {
-      description = "Logs have reached {{ index $values \"A\" }} error messages/s in a 3m period"
+      description = "Logs have reached {{ printf \"%.0f\" (index $values \"A\").Value }} error messages/s in a 3m period"
       summary     = "High rate of log errors"
     }
     labels = {
@@ -1592,7 +1592,7 @@ resource "grafana_rule_group" "rule_group_restjava" {
     exec_err_state = "Error"
     for            = "3m"
     annotations = {
-      description = "Logs have reached {{ index $values \"A\" }} error messages/s in a 3m period"
+      description = "Logs have reached {{ printf \"%.0f\" (index $values \"A\").Value }} error messages/s in a 3m period"
       summary     = "High rate of log errors"
     }
     labels = {
@@ -1833,7 +1833,7 @@ resource "grafana_rule_group" "rule_group_web3" {
     exec_err_state = "Error"
     for            = "3m"
     annotations = {
-      description = "Logs have reached {{ index $values \"A\" }} error messages/s in a 3m period"
+      description = "Logs have reached {{ printf \"%.0f\" (index $values \"A\").Value }} error messages/s in a 3m period"
       summary     = "High rate of log errors"
     }
     labels = {
