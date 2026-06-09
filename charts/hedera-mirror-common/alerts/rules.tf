@@ -303,14 +303,14 @@ resource "grafana_rule_group" "rule_group_grpc" {
       }
 
       datasource_uid = var.prometheus_datasource_uid
-      model          = "{\"editorMode\":\"code\",\"expr\":\"sum by (cluster, namespace, env_category, pod) (increase(logback_events_total{application=\\\"grpc\\\",level=\\\"error\\\"}[1m])) >= 2\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
+      model          = "{\"editorMode\":\"code\",\"expr\":\"sum by (cluster, namespace, env_category) (increase(logback_events_total{application=\\\"grpc\\\",level=\\\"error\\\"}[1m])) >= 2\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
     }
 
     no_data_state  = "NoData"
     exec_err_state = "Error"
     for            = "3m"
     annotations = {
-      description = "Logs for {{ $labels.pod }} have reached {{ index $values \"A\" }} error messages/s in a 3m period"
+      description = "Logs have reached {{ index $values \"A\" }} error messages/s in a 3m period"
       summary     = "High rate of log errors"
     }
     labels = {
@@ -669,14 +669,14 @@ resource "grafana_rule_group" "rule_group_importer" {
       }
 
       datasource_uid = var.prometheus_datasource_uid
-      model          = "{\"editorMode\":\"code\",\"expr\":\"sum by (cluster, namespace, env_category, pod) (increase(logback_events_total{application=\\\"importer\\\",level=\\\"error\\\"}[2m])) >= 2\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
+      model          = "{\"editorMode\":\"code\",\"expr\":\"sum by (cluster, namespace, env_category) (increase(logback_events_total{application=\\\"importer\\\",level=\\\"error\\\"}[2m])) >= 2\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
     }
 
     no_data_state  = "NoData"
     exec_err_state = "Error"
     for            = "3m"
     annotations = {
-      description = "Logs for {{ $labels.pod }} have reached {{ index $values \"A\" }} error messages/s in a 3m period"
+      description = "Logs have reached {{ index $values \"A\" }} error messages/s in a 3m period"
       summary     = "High rate of log errors"
     }
     labels = {
@@ -1069,14 +1069,14 @@ resource "grafana_rule_group" "rule_group_monitor" {
       }
 
       datasource_uid = var.prometheus_datasource_uid
-      model          = "{\"editorMode\":\"code\",\"expr\":\"sum by (cluster, namespace, env_category, pod) (increase(logback_events_total{application=\\\"monitor\\\",level=\\\"error\\\"}[2m])) >= 2\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
+      model          = "{\"editorMode\":\"code\",\"expr\":\"sum by (cluster, namespace, env_category) (increase(logback_events_total{application=\\\"monitor\\\",level=\\\"error\\\"}[2m])) >= 2\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
     }
 
     no_data_state  = "NoData"
     exec_err_state = "Error"
     for            = "3m"
     annotations = {
-      description = "Logs for {{ $labels.pod }} have reached {{ index $values \"A\" }} error messages/s in a 3m period"
+      description = "Logs have reached {{ index $values \"A\" }} error messages/s in a 3m period"
       summary     = "High rate of log errors"
     }
     labels = {
@@ -1585,14 +1585,14 @@ resource "grafana_rule_group" "rule_group_restjava" {
       }
 
       datasource_uid = var.prometheus_datasource_uid
-      model          = "{\"editorMode\":\"code\",\"expr\":\"sum(increase(logback_events_total{application=\\\"rest-java\\\", level=\\\"error\\\"}[1m])) by (cluster, namespace, env_category, pod) >= 2\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
+      model          = "{\"editorMode\":\"code\",\"expr\":\"sum(increase(logback_events_total{application=\\\"rest-java\\\", level=\\\"error\\\"}[1m])) by (cluster, namespace, env_category) >= 2\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
     }
 
     no_data_state  = "NoData"
     exec_err_state = "Error"
     for            = "3m"
     annotations = {
-      description = "Logs for {{ $labels.pod }} have reached {{ index $values \"A\" }} error messages/s in a 3m period"
+      description = "Logs have reached {{ index $values \"A\" }} error messages/s in a 3m period"
       summary     = "High rate of log errors"
     }
     labels = {
@@ -1826,14 +1826,14 @@ resource "grafana_rule_group" "rule_group_web3" {
       }
 
       datasource_uid = var.prometheus_datasource_uid
-      model          = "{\"editorMode\":\"code\",\"expr\":\"sum by (cluster, namespace, env_category, pod) (increase(logback_events_total{application=\\\"web3\\\",level=\\\"error\\\"}[1m])) >= 2\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
+      model          = "{\"editorMode\":\"code\",\"expr\":\"sum by (cluster, namespace, env_category) (increase(logback_events_total{application=\\\"web3\\\",level=\\\"error\\\"}[1m])) >= 2\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
     }
 
     no_data_state  = "NoData"
     exec_err_state = "Error"
     for            = "3m"
     annotations = {
-      description = "Logs for {{ $labels.pod }} have reached {{ index $values \"A\" }} error messages/s in a 3m period"
+      description = "Logs have reached {{ index $values \"A\" }} error messages/s in a 3m period"
       summary     = "High rate of log errors"
     }
     labels = {
