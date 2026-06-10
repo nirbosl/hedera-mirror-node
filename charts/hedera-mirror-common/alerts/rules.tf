@@ -2282,6 +2282,7 @@ resource "grafana_rule_group" "rule_group_logs" {
       }
 
       datasource_uid = var.loki_datasource_uid
+      query_type     = "instant"
       model = jsonencode({
         editorMode    = "code"
         expr          = "sum(count_over_time({component=\"importer\"} | regexp `(?P<timestamp>\\S+)\\s+(?P<level>\\S+)\\s+(?P<thread>\\S+)\\s+(?P<class>\\S+)\\s+(?P<message>.+)` | level = \"ERROR\" | message =~ \".*Recoverable error.*\" [1m])) by (cluster, namespace, pod) > 0"
@@ -2319,6 +2320,7 @@ resource "grafana_rule_group" "rule_group_logs" {
       }
 
       datasource_uid = var.loki_datasource_uid
+      query_type     = "instant"
       model = jsonencode({
         editorMode    = "code"
         expr          = "sum(rate({component=\"rest\"} | regexp `(?P<timestamp>\\S+)\\s+(?P<level>\\S+)\\s+(?P<requestId>\\S+)\\s+(?P<message>.+)` | level = \"ERROR\" or level = \"FATAL\" != \"canceling statement due to statement timeout\" [1m])) by (cluster, namespace, pod) > 0.04"
