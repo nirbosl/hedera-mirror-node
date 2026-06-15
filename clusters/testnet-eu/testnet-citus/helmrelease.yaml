@@ -53,6 +53,11 @@ spec:
         HIERO_MIRROR_IMPORTER_NETWORK: "TESTNET"
         HIERO_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HIERO_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
     monitor:
       config:
         hiero:
@@ -71,15 +76,20 @@ spec:
         HIERO_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.25"
         HIERO_MIRROR_MONITOR_SUBSCRIBE_GRPC_HCS_TOPICID: "0.0.1926"
       prometheusRules:
-        MonitorPublishLatency:
-          enabled: false
-        MonitorSubscribeLatency:
+        enabled: false
+      alertmanager:
+        inhibitRules:
           enabled: false
     rest:
       monitor:
         config:
           contract:
             contractId: "0.0.2664875"
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
     rosetta:
       env:
         HIERO_MIRROR_ROSETTA_NETWORK: "testnet"
@@ -108,3 +118,24 @@ spec:
     test:
       cucumberTags: "@acceptance and not @call and not @estimateprecompile"
       enabled: true
+    alertmanager:
+      inhibitRules:
+        enabled: false
+    grpc:
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
+    restjava:
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
+    web3:
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false

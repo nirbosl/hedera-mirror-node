@@ -50,6 +50,11 @@ spec:
     grpc:
       ingress:
         enabled: true
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
     importer:
       env:
         HIERO_MIRROR_IMPORTER_MIGRATION_BACKFILLTRANSACTIONHASHMIGRATION_PARAMS_STARTTIMESTAMP: "0"
@@ -57,6 +62,11 @@ spec:
         HIERO_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HIERO_MIRROR_IMPORTER_RECONCILIATION_ENABLED: "false"
         HIERO_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
     monitor:
       config:
         hiero:
@@ -74,9 +84,9 @@ spec:
         HIERO_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_PROPERTIES_TOPICID: "0.0.368908"
         HIERO_MIRROR_MONITOR_SUBSCRIBE_GRPC_HCS_TOPICID: "0.0.368908"
       prometheusRules:
-        MonitorPublishLatency:
-          enabled: false
-        MonitorSubscribeLatency:
+        enabled: false
+      alertmanager:
+        inhibitRules:
           enabled: false
     rest:
       ingress:
@@ -85,9 +95,19 @@ spec:
         config:
           contract:
             contractId: "0.0.2283226"
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
     restjava:
       ingress:
         enabled: true
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
     rosetta:
       env:
         HIERO_MIRROR_ROSETTA_NETWORK: "mainnet"
@@ -142,3 +162,11 @@ spec:
         SPRING_DATASOURCE_HIKARI_MAXIMUMPOOLSIZE: "75"
       hpa:
         minReplicas: 5
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
+    alertmanager:
+      inhibitRules:
+        enabled: false

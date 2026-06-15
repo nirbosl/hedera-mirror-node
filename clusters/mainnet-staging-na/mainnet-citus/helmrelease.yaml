@@ -52,6 +52,11 @@ spec:
         HIERO_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_ENTITYNFTTRANSACTIONS: "true"
         HIERO_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HIERO_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
     monitor:
       env:
         HIERO_MIRROR_MONITOR_NETWORK: "MAINNET"
@@ -59,11 +64,11 @@ spec:
         HIERO_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.02"
         HIERO_MIRROR_MONITOR_SUBSCRIBE_GRPC_HCS_TOPICID: "0.0.798453"
       prometheusRules:
-        MonitorPublishLatency:
-          enabled: false
-        MonitorSubscribeLatency:
-          enabled: false
+        enabled: false
       replicas: 0
+      alertmanager:
+        inhibitRules:
+          enabled: false
     rest:
       env:
         HIERO_MIRROR_REST_CACHE_RESPONSE_ENABLED: "false"
@@ -81,6 +86,11 @@ spec:
       resources:
         requests:
           cpu: 1100m # same as limits
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
     restjava:
       hpa:
         metrics:
@@ -93,6 +103,11 @@ spec:
       resources:
         requests:
           cpu: 2 # same as limits
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
     rosetta:
       env:
         HIERO_MIRROR_ROSETTA_NETWORK: "mainnet"
@@ -150,3 +165,17 @@ spec:
       resources:
         requests:
           cpu: 2 # same as limits
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
+    alertmanager:
+      inhibitRules:
+        enabled: false
+    grpc:
+      prometheusRules:
+        enabled: false
+      alertmanager:
+        inhibitRules:
+          enabled: false
