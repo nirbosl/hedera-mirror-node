@@ -43,20 +43,15 @@ spec:
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TRANSACTIONHASH: "true"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_PROPERTIES_TOPICID: "0.0.797576"
         HEDERA_MIRROR_MONITOR_SUBSCRIBE_GRPC_HCS_TOPICID: "0.0.797576"
       prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
+        MonitorPublishLatency:
+          enabled: false
+        MonitorSubscribeLatency:
           enabled: false
     postgresql:
       enabled: false
@@ -67,30 +62,3 @@ spec:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     test:
       enabled: true
-    alertmanager:
-      inhibitRules:
-        enabled: false
-    grpc:
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
-    rest:
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
-    restjava:
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
-    web3:
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false

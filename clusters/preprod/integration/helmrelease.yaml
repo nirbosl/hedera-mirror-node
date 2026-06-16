@@ -46,19 +46,16 @@ spec:
         HIERO_MIRROR_IMPORTER_PARSER_HALTONERROR: "true"
         HIERO_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TRANSACTIONHASH: "true"
         HIERO_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
     monitor:
       env:
         HIERO_MIRROR_MONITOR_NETWORK: "OTHER"
         HIERO_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "1"
       prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
+        MonitorPublishErrors:
+          enabled: false
+        MonitorPublishLatency:
+          enabled: false
+        MonitorSubscribeLatency:
           enabled: false
     postgresql:
       enabled: false
@@ -66,11 +63,6 @@ spec:
       routes:
         network:
           nodes: true
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
     rosetta:
       enabled: true
     test:
@@ -86,23 +78,3 @@ spec:
     web3:
       env:
         HIERO_MIRROR_WEB3_OPCODE_TRACER_ENABLED: "true"
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
-    alertmanager:
-      inhibitRules:
-        enabled: false
-    grpc:
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
-    rest:
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false

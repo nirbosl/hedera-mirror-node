@@ -37,19 +37,16 @@ spec:
       env:
         HIERO_MIRROR_IMPORTER_NETWORK: "OTHER"
         HIERO_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
     monitor:
       env:
         HIERO_MIRROR_MONITOR_NETWORK: "OTHER"
         HIERO_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.5"
       prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
+        MonitorPublishErrors:
+          enabled: false
+        MonitorPublishLatency:
+          enabled: false
+        MonitorSubscribeLatency:
           enabled: false
     postgresql:
       enabled: false
@@ -58,11 +55,6 @@ spec:
         config:
           stateproof:
             enabled: false
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
     test:
       config:
         hiero:
@@ -75,23 +67,3 @@ spec:
       env:
         HIERO_MIRROR_WEB3_EVM_NETWORK: OTHER
 
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
-    alertmanager:
-      inhibitRules:
-        enabled: false
-    grpc:
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
-    restjava:
-      prometheusRules:
-        enabled: false
-      alertmanager:
-        inhibitRules:
-          enabled: false
