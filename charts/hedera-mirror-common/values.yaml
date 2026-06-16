@@ -395,9 +395,6 @@ stackgres:
   operator:
     image:
       name: gcr.io/mirrornode/stackgres-operator
-  prometheusRules:
-    enabled: false
-
 testkube:
   enabled: false
   executor:
