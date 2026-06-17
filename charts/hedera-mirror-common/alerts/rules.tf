@@ -451,6 +451,7 @@ resource "grafana_rule_group" "rule_group_grpc" {
       summary     = "No gRPC API instances running"
     }
     labels = {
+      area        = "resource"
       application = "grpc"
       severity    = "critical"
     }
@@ -1092,6 +1093,7 @@ resource "grafana_rule_group" "rule_group_importer" {
       summary     = "No importer instances are ready"
     }
     labels = {
+      area        = "resource"
       application = "importer"
       severity    = "critical"
     }
@@ -1425,6 +1427,7 @@ resource "grafana_rule_group" "rule_group_monitor" {
       summary     = "No monitor instances running"
     }
     labels = {
+      area        = "resource"
       application = "monitor"
       severity    = "critical"
     }
@@ -1578,6 +1581,7 @@ resource "grafana_rule_group" "rule_group_rest" {
       summary     = "No REST API instances running"
     }
     labels = {
+      area        = "resource"
       application = "rest"
       severity    = "critical"
     }
@@ -1643,6 +1647,7 @@ resource "grafana_rule_group" "rule_group_restjava" {
       summary     = "Mirror Java REST API CPU usage exceeds 80%"
     }
     labels = {
+      area        = "resource"
       application = "rest-java"
       severity    = "critical"
     }
@@ -1944,6 +1949,7 @@ resource "grafana_rule_group" "rule_group_web3" {
       summary     = "Mirror Web3 API CPU usage exceeds 80%"
     }
     labels = {
+      area        = "resource"
       application = "web3"
       severity    = "critical"
     }
