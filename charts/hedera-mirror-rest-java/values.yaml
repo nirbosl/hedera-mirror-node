@@ -10,6 +10,22 @@ affinity:
             matchLabels:
               app.kubernetes.io/component: rest-java
 
+alertmanager:
+  inhibitRules:
+    enabled: false
+    InhibitAllWhenPodIssues:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: area
+              value: resource
+          targetMatch:
+            - name: application
+              value: rest-java
+          equal:
+            - namespace
+            - pod
+
 annotations: {}
 
 config: {}
