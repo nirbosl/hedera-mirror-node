@@ -2200,35 +2200,6 @@ resource "grafana_rule_group" "rule_group_graphql" {
   interval_seconds = 60
 
   rule {
-    name      = "GraphQLErrors"
-    condition = "A"
-
-    data {
-      ref_id = "A"
-
-      relative_time_range {
-        from = 600
-        to   = 0
-      }
-
-      datasource_uid = var.prometheus_datasource_uid
-      model          = "{\"editorMode\":\"code\",\"expr\":\"sum(rate(graphql_request_seconds_count{application=\\\"graphql\\\", status=\\\"ERROR\\\"}[5m])) by (cluster, namespace, env_category, pod) / sum(rate(graphql_request_seconds_count{application=\\\"graphql\\\"}[5m])) by (cluster, namespace, env_category, pod) > 0.05\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
-    }
-
-    no_data_state  = "NoData"
-    exec_err_state = "Error"
-    for            = "2m"
-    annotations = {
-      description = "{{ (index $values \"A\").Value | humanizePercentage }} graphql request error rate for {{ $labels.pod }}"
-      summary     = "Mirror GraphQL request error rate exceeds 5%"
-    }
-    labels = {
-      application = "graphql"
-      severity    = "critical"
-    }
-    is_paused = false
-  }
-  rule {
     name      = "GraphQLDataFetcherErrors"
     condition = "A"
 
@@ -2250,6 +2221,35 @@ resource "grafana_rule_group" "rule_group_graphql" {
     annotations = {
       description = "High data fetcher error rate of {{ (index $values \"A\").Value | humanizePercentage }} for {{ $labels.pod }}"
       summary     = "Mirror GraphQL data fetcher high error rate exceeds 5%"
+    }
+    labels = {
+      application = "graphql"
+      severity    = "critical"
+    }
+    is_paused = false
+  }
+  rule {
+    name      = "GraphQLErrors"
+    condition = "A"
+
+    data {
+      ref_id = "A"
+
+      relative_time_range {
+        from = 600
+        to   = 0
+      }
+
+      datasource_uid = var.prometheus_datasource_uid
+      model          = "{\"editorMode\":\"code\",\"expr\":\"sum(rate(graphql_request_seconds_count{application=\\\"graphql\\\", status=\\\"ERROR\\\"}[5m])) by (cluster, namespace, env_category, pod) / sum(rate(graphql_request_seconds_count{application=\\\"graphql\\\"}[5m])) by (cluster, namespace, env_category, pod) > 0.05\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
+    }
+
+    no_data_state  = "NoData"
+    exec_err_state = "Error"
+    for            = "2m"
+    annotations = {
+      description = "{{ (index $values \"A\").Value | humanizePercentage }} graphql request error rate for {{ $labels.pod }}"
+      summary     = "Mirror GraphQL request error rate exceeds 5%"
     }
     labels = {
       application = "graphql"
@@ -2407,6 +2407,36 @@ resource "grafana_rule_group" "rule_group_graphql" {
     is_paused = false
   }
   rule {
+    name      = "GraphQLNoPodsReady"
+    condition = "A"
+
+    data {
+      ref_id = "A"
+
+      relative_time_range {
+        from = 600
+        to   = 0
+      }
+
+      datasource_uid = var.prometheus_datasource_uid
+      model          = "{\"editorMode\":\"code\",\"expr\":\"sum by (cluster, namespace, env_category) (kube_pod_status_ready{pod=~\\\".*-graphql-.*\\\",condition=\\\"true\\\"}) < 1\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
+    }
+
+    no_data_state  = "NoData"
+    exec_err_state = "Error"
+    for            = "2m"
+    annotations = {
+      description = "No GraphQL API instances are currently running in {{ $labels.namespace }}"
+      summary     = "No GraphQL API instances running"
+    }
+    labels = {
+      application = "graphql"
+      area        = "resource"
+      severity    = "critical"
+    }
+    is_paused = false
+  }
+  rule {
     name      = "GraphQLNoRequests"
     condition = "A"
 
@@ -2490,36 +2520,6 @@ resource "grafana_rule_group" "rule_group_graphql" {
     labels = {
       application = "graphql"
       severity    = "warning"
-    }
-    is_paused = false
-  }
-  rule {
-    name      = "GraphQLNoPodsReady"
-    condition = "A"
-
-    data {
-      ref_id = "A"
-
-      relative_time_range {
-        from = 600
-        to   = 0
-      }
-
-      datasource_uid = var.prometheus_datasource_uid
-      model          = "{\"editorMode\":\"code\",\"expr\":\"sum by (cluster, namespace, env_category) (kube_pod_status_ready{pod=~\\\".*-graphql-.*\\\",condition=\\\"true\\\"}) < 1\",\"instant\":true,\"intervalMs\":1000,\"legendFormat\":\"__auto\",\"maxDataPoints\":43200,\"range\":false,\"refId\":\"A\"}"
-    }
-
-    no_data_state  = "NoData"
-    exec_err_state = "Error"
-    for            = "2m"
-    annotations = {
-      description = "No GraphQL API instances are currently running in {{ $labels.namespace }}"
-      summary     = "No GraphQL API instances running"
-    }
-    labels = {
-      application = "graphql"
-      area        = "resource"
-      severity    = "critical"
     }
     is_paused = false
   }

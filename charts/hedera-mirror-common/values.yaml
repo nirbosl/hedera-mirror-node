@@ -37,8 +37,6 @@ loki:
       limits_config:
         retention_period: 1440h
       ruler:
-        alertmanager_url: http://{{ .Release.Name }}-prometheus-alertmanager:9093
-        enable_alertmanager_v2: true
         enable_api: true
         ring:
           kvstore:
