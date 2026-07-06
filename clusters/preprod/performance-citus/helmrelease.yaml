@@ -49,13 +49,6 @@ spec:
     monitor:
       env:
         HIERO_MIRROR_MONITOR_NETWORK: "OTHER"
-      prometheusRules:
-        MonitorPublishErrors:
-          enabled: false
-        MonitorPublishLatency:
-          enabled: false
-        MonitorSubscribeLatency:
-          enabled: false
     rest:
       monitor:
         enabled: false

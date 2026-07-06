@@ -55,13 +55,6 @@ spec:
         HIERO_MIRROR_MONITOR_NETWORK: "PREVIEWNET"
         HIERO_MIRROR_MONITOR_HEALTH_RELEASE_ENABLED: "false"
         HIERO_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.5"
-      prometheusRules:
-        MonitorPublishErrors:
-          enabled: false
-        MonitorPublishLatency:
-          enabled: false
-        MonitorSubscribeLatency:
-          enabled: false
     rest:
       env:
         HIERO_MIRROR_REST_CHAINID: "0x129"
