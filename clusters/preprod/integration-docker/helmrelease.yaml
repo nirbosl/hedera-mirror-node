@@ -41,13 +41,6 @@ spec:
       env:
         HIERO_MIRROR_MONITOR_NETWORK: "OTHER"
         HIERO_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.5"
-      prometheusRules:
-        MonitorPublishErrors:
-          enabled: false
-        MonitorPublishLatency:
-          enabled: false
-        MonitorSubscribeLatency:
-          enabled: false
     postgresql:
       enabled: false
     rest:
