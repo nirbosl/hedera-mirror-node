@@ -35,7 +35,7 @@ func TestInitScriptURL(t *testing.T) {
 		t.Error("InitScriptURL constant should not be empty")
 	}
 
-	expected := "https://raw.githubusercontent.com/hiero-ledger/hiero-mirror-node/refs/heads/main/importer/src/main/resources/db/scripts/init.sh"
+	expected := "https://raw.githubusercontent.com/hiero-ledger/hiero-mirror-node/846f9fa0ae4f4069434eca07024767519144294e/importer/src/main/resources/db/scripts/init.sh"
 	if InitScriptURL != expected {
 		t.Errorf("InitScriptURL mismatch:\nexpected: %s\ngot: %s", expected, InitScriptURL)
 	}

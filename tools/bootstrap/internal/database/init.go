@@ -19,7 +19,7 @@ import (
 
 const (
 	// InitScriptURL is the URL to download the init.sh script from
-	InitScriptURL = "https://raw.githubusercontent.com/hiero-ledger/hiero-mirror-node/refs/heads/main/importer/src/main/resources/db/scripts/init.sh"
+	InitScriptURL = "https://raw.githubusercontent.com/hiero-ledger/hiero-mirror-node/846f9fa0ae4f4069434eca07024767519144294e/importer/src/main/resources/db/scripts/init.sh"
 )
 
 // InitConfig holds configuration for database initialization.
