@@ -29,6 +29,14 @@ var (
 	partitionDatePattern = regexp.MustCompile(`_p(\d{4})_(\d{2})`)
 )
 
+// quoteIdentifier applies Postgres quote_ident escaping so name can't break out of the identifier position.
+func quoteIdentifier(name string) (string, error) {
+	if name == "" {
+		return "", fmt.Errorf("empty table/partition identifier derived from filename")
+	}
+	return pgx.Identifier{name}.Sanitize(), nil
+}
+
 // ImportResult contains the results of an import operation.
 type ImportResult struct {
 	RowsImported int64
@@ -82,8 +90,13 @@ func IsSpecialFile(filename string) bool {
 func TruncateBeforeImport(ctx context.Context, conn *pgx.Conn, filename string) error {
 	target := GetTableOrPartition(filename)
 
-	query := fmt.Sprintf("TRUNCATE TABLE %s", target)
-	_, err := conn.Exec(ctx, query)
+	quoted, err := quoteIdentifier(target)
+	if err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf("TRUNCATE TABLE %s", quoted)
+	_, err = conn.Exec(ctx, query)
 	return err
 }
 
@@ -102,7 +115,12 @@ func TruncateBeforeImportTx(ctx context.Context, tx pgx.Tx, filename string) (bo
 		return false, nil
 	}
 
-	query := fmt.Sprintf("TRUNCATE TABLE %s", target)
+	quoted, err := quoteIdentifier(target)
+	if err != nil {
+		return false, err
+	}
+
+	query := fmt.Sprintf("TRUNCATE TABLE %s", quoted)
 	_, err = tx.Exec(ctx, query)
 	if err != nil {
 		return false, fmt.Errorf("truncate failed: %w", err)
@@ -213,8 +231,14 @@ func ImportFile(ctx context.Context, conn *pgx.Conn, filePath string, decompress
 	tableName := GetTableName(filePath)
 	result.TableName = tableName
 
+	quotedTable, err := quoteIdentifier(tableName)
+	if err != nil {
+		result.Error = err
+		return result
+	}
+
 	// Build COPY command
-	copySQL := fmt.Sprintf("COPY %s (%s) FROM STDIN WITH (FORMAT csv)", tableName, columns)
+	copySQL := fmt.Sprintf("COPY %s (%s) FROM STDIN WITH (FORMAT csv)", quotedTable, columns)
 
 	// Execute COPY - streams directly from reader
 	pgConn := conn.PgConn()
@@ -310,6 +334,12 @@ func ImportWithValidation(ctx context.Context, conn *pgx.Conn, filePath string, 
 	tableName := GetTableName(filePath)
 	result.TableName = tableName
 
+	quotedTable, err := quoteIdentifier(tableName)
+	if err != nil {
+		result.Error = err
+		return result
+	}
+
 	truncated, err := TruncateBeforeImportTx(ctx, tx, filePath)
 	if err != nil {
 		result.Error = fmt.Errorf("truncate failed: %w", err)
@@ -329,7 +359,7 @@ func ImportWithValidation(ctx context.Context, conn *pgx.Conn, filePath string, 
 			result.Error = err
 			return result
 		}
-		deleteSQL := fmt.Sprintf("DELETE FROM %s WHERE %s >= $1 AND %s < $2", tableName, tsCol, tsCol)
+		deleteSQL := fmt.Sprintf("DELETE FROM %s WHERE %s >= $1 AND %s < $2", quotedTable, tsCol, tsCol)
 		if _, err := tx.Exec(ctx, deleteSQL, startNs, endNs); err != nil {
 			result.Error = fmt.Errorf("delete range failed for %s.%s [%d, %d): %w", tableName, tsCol, startNs, endNs, err)
 			return result
@@ -370,7 +400,7 @@ func ImportWithValidation(ctx context.Context, conn *pgx.Conn, filePath string, 
 	columns := parseHeaderToColumns(headerLine)
 
 	// Build COPY command
-	copySQL := fmt.Sprintf("COPY %s (%s) FROM STDIN WITH (FORMAT csv)", tableName, columns)
+	copySQL := fmt.Sprintf("COPY %s (%s) FROM STDIN WITH (FORMAT csv)", quotedTable, columns)
 
 	// Execute COPY within transaction - use tx.Conn().PgConn() to ensure
 	// the COPY is part of the transaction and connection is properly cleaned up

@@ -59,6 +59,35 @@ func TestGetTableOrPartition(t *testing.T) {
 	}
 }
 
+func TestQuoteIdentifier(t *testing.T) {
+	cases := []struct {
+		name     string
+		expected string
+	}{
+		{"account_balance", `"account_balance"`},
+		{"account_balance_p2024_01", `"account_balance_p2024_01"`},
+		{"flyway_schema_history", `"flyway_schema_history"`},
+		{"_leading_underscore", `"_leading_underscore"`},
+		{"123_starts_with_digit", `"123_starts_with_digit"`},
+		{"has-hyphen", `"has-hyphen"`},
+		{"account_balance; DROP TABLE flyway_schema_history; --", `"account_balance; DROP TABLE flyway_schema_history; --"`},
+		{`account_balance" CASCADE; DROP TABLE flyway_schema_history; --`, `"account_balance"" CASCADE; DROP TABLE flyway_schema_history; --"`},
+	}
+	for _, tc := range cases {
+		quoted, err := quoteIdentifier(tc.name)
+		if err != nil {
+			t.Errorf("quoteIdentifier(%q): expected no error, got %v", tc.name, err)
+		}
+		if quoted != tc.expected {
+			t.Errorf("quoteIdentifier(%q): expected %q, got %q", tc.name, tc.expected, quoted)
+		}
+	}
+
+	if _, err := quoteIdentifier(""); err == nil {
+		t.Error("quoteIdentifier(\"\"): expected error for empty identifier, got nil")
+	}
+}
+
 func TestIsPartitioned(t *testing.T) {
 	tests := []struct {
 		filename    string
