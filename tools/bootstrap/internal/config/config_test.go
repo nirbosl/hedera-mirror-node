@@ -26,6 +26,9 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.PGDatabase != "mirror_node" {
 		t.Errorf("Expected PGDatabase=mirror_node, got %s", cfg.PGDatabase)
 	}
+	if cfg.PGSSLMode != "verify-full" {
+		t.Errorf("Expected PGSSLMode=verify-full, got %s", cfg.PGSSLMode)
+	}
 	if cfg.IsGCPCloudSQL {
 		t.Error("Expected IsGCPCloudSQL=false")
 	}
@@ -81,11 +84,35 @@ export DECOMPRESSOR_THREADS=8
 	if cfg.PGPort != "5433" {
 		t.Errorf("Expected PGPort=5433, got %s", cfg.PGPort)
 	}
+	if cfg.PGSSLMode != "verify-full" {
+		t.Errorf("Expected PGSSLMode=verify-full when unset, got %s", cfg.PGSSLMode)
+	}
 	if !cfg.IsGCPCloudSQL {
 		t.Error("Expected IsGCPCloudSQL=true")
 	}
 	if cfg.DecompressorThreads != 8 {
 		t.Errorf("Expected DecompressorThreads=8, got %d", cfg.DecompressorThreads)
+	}
+}
+
+func TestLoadFromEnvFile_SSLModeOverride(t *testing.T) {
+	content := `export PGSSLMODE="disable"
+export PGSSLROOTCERT="/etc/ssl/ca.pem"
+`
+	tmpDir := t.TempDir()
+	envFile := filepath.Join(tmpDir, "bootstrap.env")
+	os.WriteFile(envFile, []byte(content), 0644)
+
+	cfg, err := LoadFromEnvFile(envFile)
+	if err != nil {
+		t.Fatalf("LoadFromEnvFile failed: %v", err)
+	}
+
+	if cfg.PGSSLMode != "disable" {
+		t.Errorf("Expected PGSSLMode=disable, got %s", cfg.PGSSLMode)
+	}
+	if cfg.PGSSLRootCert != "/etc/ssl/ca.pem" {
+		t.Errorf("Expected PGSSLRootCert=/etc/ssl/ca.pem, got %s", cfg.PGSSLRootCert)
 	}
 }
 
@@ -280,7 +307,25 @@ func TestConnectionString(t *testing.T) {
 	}
 
 	conn := cfg.ConnectionString()
-	expected := "host=localhost port=5432 user=user password=pass dbname=db sslmode=disable"
+	expected := "host=localhost port=5432 user=user password=pass dbname=db sslmode=verify-full"
+	if conn != expected {
+		t.Errorf("Expected %q, got %q", expected, conn)
+	}
+}
+
+func TestConnectionString_ExplicitSSLModeAndRootCert(t *testing.T) {
+	cfg := &Config{
+		PGHost:        "localhost",
+		PGPort:        "5432",
+		PGUser:        "user",
+		PGPassword:    "pass",
+		PGDatabase:    "db",
+		PGSSLMode:     "disable",
+		PGSSLRootCert: "/etc/ssl/ca.pem",
+	}
+
+	conn := cfg.ConnectionString()
+	expected := "host=localhost port=5432 user=user password=pass dbname=db sslmode=disable sslrootcert=/etc/ssl/ca.pem"
 	if conn != expected {
 		t.Errorf("Expected %q, got %q", expected, conn)
 	}
@@ -296,7 +341,25 @@ func TestPgxConnectionString(t *testing.T) {
 	}
 
 	conn := cfg.PgxConnectionString()
-	expected := "postgres://user:pass@localhost:5432/db?sslmode=disable"
+	expected := "postgres://user:pass@localhost:5432/db?sslmode=verify-full"
+	if conn != expected {
+		t.Errorf("Expected %q, got %q", expected, conn)
+	}
+}
+
+func TestPgxConnectionString_ExplicitSSLModeAndRootCert(t *testing.T) {
+	cfg := &Config{
+		PGHost:        "localhost",
+		PGPort:        "5432",
+		PGUser:        "user",
+		PGPassword:    "pass",
+		PGDatabase:    "db",
+		PGSSLMode:     "require",
+		PGSSLRootCert: "/etc/ssl/ca.pem",
+	}
+
+	conn := cfg.PgxConnectionString()
+	expected := "postgres://user:pass@localhost:5432/db?sslmode=require&sslrootcert=%2Fetc%2Fssl%2Fca.pem"
 	if conn != expected {
 		t.Errorf("Expected %q, got %q", expected, conn)
 	}

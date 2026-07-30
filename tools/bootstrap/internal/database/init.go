@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,6 +30,8 @@ type InitConfig struct {
 	AdminUser     string
 	AdminPassword string
 	AdminDatabase string
+	PGSSLMode     string
+	PGSSLRootCert string
 
 	// User passwords to set
 	OwnerPassword    string
@@ -56,6 +59,23 @@ const (
 	SkipDBInitFlag = "SKIP_DB_INIT"
 )
 
+func sslModeOrDefault(mode string) string {
+	if mode == "" {
+		return "verify-full"
+	}
+	return mode
+}
+
+// buildConnString builds a connection string to AdminHost/AdminPort with cfg's TLS settings.
+func buildConnString(user, password, dbname string, cfg InitConfig) string {
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		user, password, cfg.AdminHost, cfg.AdminPort, dbname, sslModeOrDefault(cfg.PGSSLMode))
+	if cfg.PGSSLRootCert != "" {
+		connString += "&sslrootcert=" + url.QueryEscape(cfg.PGSSLRootCert)
+	}
+	return connString
+}
+
 // Initialize performs full database initialization: downloads and runs init.sh to create
 // database and roles, executes schema.sql to create tables, verifies setup, and creates
 // success flag on completion. Skips if already initialized.
@@ -74,6 +94,12 @@ func Initialize(ctx context.Context, cfg InitConfig) error {
 
 	if _, err := os.Stat(schemaPath); os.IsNotExist(err) {
 		return fmt.Errorf("schema.sql not found at %s", schemaPath)
+	}
+
+	// Fail fast if we can't even connect, before touching anything
+	adminConnString := buildConnString(cfg.AdminUser, cfg.AdminPassword, cfg.AdminDatabase, cfg)
+	if err := TestConnection(ctx, adminConnString); err != nil {
+		return fmt.Errorf("cannot connect to database: %w", err)
 	}
 
 	// Download init.sh
@@ -154,6 +180,8 @@ func runInitScript(ctx context.Context, scriptPath string, cfg InitConfig) error
 		fmt.Sprintf("PGUSER=%s", cfg.AdminUser),
 		fmt.Sprintf("PGPASSWORD=%s", cfg.AdminPassword),
 		fmt.Sprintf("PGDATABASE=%s", cfg.AdminDatabase),
+		fmt.Sprintf("PGSSLMODE=%s", sslModeOrDefault(cfg.PGSSLMode)),
+		fmt.Sprintf("PGSSLROOTCERT=%s", cfg.PGSSLRootCert),
 		fmt.Sprintf("OWNER_PASSWORD=%s", cfg.OwnerPassword),
 		fmt.Sprintf("GRAPHQL_PASSWORD=%s", cfg.GraphQLPassword),
 		fmt.Sprintf("GRPC_PASSWORD=%s", cfg.GRPCPassword),
@@ -190,6 +218,8 @@ func executeSchema(ctx context.Context, cfg InitConfig, schemaPath string) error
 		"PGUSER=mirror_node",
 		fmt.Sprintf("PGPASSWORD=%s", cfg.OwnerPassword),
 		"PGDATABASE=mirror_node",
+		fmt.Sprintf("PGSSLMODE=%s", sslModeOrDefault(cfg.PGSSLMode)),
+		fmt.Sprintf("PGSSLROOTCERT=%s", cfg.PGSSLRootCert),
 	)
 
 	output, err := cmd.CombinedOutput()
@@ -202,8 +232,7 @@ func executeSchema(ctx context.Context, cfg InitConfig, schemaPath string) error
 
 // verifyTables checks that expected tables exist in the database.
 func verifyTables(ctx context.Context, cfg InitConfig) error {
-	connString := fmt.Sprintf("postgres://mirror_node:%s@%s:%s/mirror_node?sslmode=disable",
-		cfg.OwnerPassword, cfg.AdminHost, cfg.AdminPort)
+	connString := buildConnString("mirror_node", cfg.OwnerPassword, "mirror_node", cfg)
 
 	conn, err := pgx.Connect(ctx, connString)
 	if err != nil {
