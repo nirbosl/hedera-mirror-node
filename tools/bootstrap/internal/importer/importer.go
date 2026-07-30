@@ -192,7 +192,7 @@ func ImportFile(ctx context.Context, conn *pgx.Conn, filePath string, decompress
 	baseName := filepath.Base(filePath)
 
 	// Set application name for progress tracking
-	_, err = conn.Exec(ctx, fmt.Sprintf("SET application_name = 'bootstrap_copy_%s'", baseName))
+	_, err = conn.Exec(ctx, "SELECT set_config('application_name', $1, false)", "bootstrap_copy_"+baseName)
 	if err != nil {
 		result.Error = fmt.Errorf("set application_name failed: %w", err)
 		return result
@@ -225,7 +225,11 @@ func ImportFile(ctx context.Context, conn *pgx.Conn, filePath string, decompress
 	result.BytesRead = int64(len(headerLine))
 
 	// Parse header to get column list
-	columns := parseHeaderToColumns(headerLine)
+	columns, err := parseHeaderToColumns(headerLine)
+	if err != nil {
+		result.Error = fmt.Errorf("header parse failed: %w", err)
+		return result
+	}
 
 	// Get table name
 	tableName := GetTableName(filePath)
@@ -323,7 +327,7 @@ func ImportWithValidation(ctx context.Context, conn *pgx.Conn, filePath string, 
 	defer tx.Rollback(ctx) // No-op if committed
 
 	// Set application name for progress tracking (within transaction)
-	_, err = tx.Exec(ctx, fmt.Sprintf("SET application_name = 'bootstrap_copy_%s'", baseName))
+	_, err = tx.Exec(ctx, "SELECT set_config('application_name', $1, false)", "bootstrap_copy_"+baseName)
 	if err != nil {
 		result.Error = fmt.Errorf("set application_name failed: %w", err)
 		return result
@@ -397,7 +401,11 @@ func ImportWithValidation(ctx context.Context, conn *pgx.Conn, filePath string, 
 	result.BytesRead = int64(len(headerLine))
 
 	// Parse header to get column list
-	columns := parseHeaderToColumns(headerLine)
+	columns, err := parseHeaderToColumns(headerLine)
+	if err != nil {
+		result.Error = fmt.Errorf("header parse failed: %w", err)
+		return result
+	}
 
 	// Build COPY command
 	copySQL := fmt.Sprintf("COPY %s (%s) FROM STDIN WITH (FORMAT csv)", quotedTable, columns)
@@ -433,10 +441,10 @@ func ImportWithValidation(ctx context.Context, conn *pgx.Conn, filePath string, 
 }
 
 // parseHeaderToColumns converts a CSV header line to a quoted column list.
-func parseHeaderToColumns(header []byte) string {
+func parseHeaderToColumns(header []byte) (string, error) {
 	header = trimRight(header, '\r', '\n')
 
-	var columns []string
+	var rawColumns []string
 	var current strings.Builder
 	inQuotes := false
 
@@ -446,15 +454,24 @@ func parseHeaderToColumns(header []byte) string {
 		case ch == '"':
 			inQuotes = !inQuotes
 		case ch == ',' && !inQuotes:
-			columns = append(columns, fmt.Sprintf(`"%s"`, current.String()))
+			rawColumns = append(rawColumns, current.String())
 			current.Reset()
 		default:
 			current.WriteByte(ch)
 		}
 	}
-	columns = append(columns, fmt.Sprintf(`"%s"`, current.String()))
+	rawColumns = append(rawColumns, current.String())
 
-	return strings.Join(columns, ",")
+	columns := make([]string, len(rawColumns))
+	for i, col := range rawColumns {
+		quoted, err := quoteIdentifier(col)
+		if err != nil {
+			return "", fmt.Errorf("column %d: %w", i, err)
+		}
+		columns[i] = quoted
+	}
+
+	return strings.Join(columns, ","), nil
 }
 
 // trimRight trims specified bytes from the right side.
