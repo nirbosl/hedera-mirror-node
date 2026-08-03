@@ -403,6 +403,36 @@ invalid_size.csv.gz,100,notanumber,abc
 	}
 }
 
+func TestLoad_RejectsPathTraversal(t *testing.T) {
+	tests := []string{
+		"../../../../etc/passwd",
+		"/etc/passwd",
+		"table/../../etc/passwd",
+	}
+
+	for _, filename := range tests {
+		content := "filename,row_count,file_size,blake3_hash\n" + filename + ",100,200,abc\n"
+		path := createTestManifest(t, content)
+
+		if _, err := Load(path, "/data"); err == nil {
+			t.Errorf("Load should reject filename %q", filename)
+		}
+	}
+}
+
+func TestLoad_AllowsSubdirFilename(t *testing.T) {
+	content := "filename,row_count,file_size,blake3_hash\naccount_balance/account_balance_p2024_01.csv.gz,100,200,abc\n"
+	path := createTestManifest(t, content)
+
+	m, err := Load(path, "/data")
+	if err != nil {
+		t.Fatalf("Load should accept a one-level subdir filename: %v", err)
+	}
+	if m.Count() != 1 {
+		t.Errorf("Expected 1 entry, got %d", m.Count())
+	}
+}
+
 func TestNormalizeFilename(t *testing.T) {
 	tests := []struct {
 		input    string

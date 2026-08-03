@@ -63,6 +63,9 @@ func Load(manifestPath, dataDir string) (*Manifest, error) {
 		if filename == "" {
 			continue
 		}
+		if !filepath.IsLocal(filename) {
+			return nil, fmt.Errorf("manifest contains a suspicious filename %q - it should stay within the data directory", filename)
+		}
 
 		// Parse row count (may be "N/A")
 		var rowCount int64 = -1
