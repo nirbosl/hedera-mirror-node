@@ -190,6 +190,7 @@ Edit the `bootstrap.env` file to set your own credentials and passwords for data
 
   - `PGSSLMODE` defaults to `verify-full`, so credentials and data stay encrypted in transit - this matters since bootstrap is often run from a separate machine than the database.
   - If your server's certificate isn't already trusted by your system (common for Cloud SQL, StackGres, or any private CA), set `PGSSLROOTCERT` to the CA certificate's path.
+  - If you're connecting directly to a Cloud SQL instance's private IP (not through the Cloud SQL Auth Proxy), use `PGSSLMODE="verify-ca"` instead of `verify-full` - Cloud SQL's server certificate doesn't include an IP SAN, so `verify-full`'s hostname check will fail with an `x509: cannot validate certificate` error even though the connection itself is fine.
   - If your PostgreSQL server doesn't have TLS set up at all (e.g. a local/dev instance), set `PGSSLMODE="disable"`.
   - Available `PGSSLMODE` values, from least to most secure:
 
