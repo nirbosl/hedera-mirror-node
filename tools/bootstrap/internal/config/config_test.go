@@ -3,8 +3,10 @@
 package config
 
 import (
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -297,40 +299,6 @@ func TestLoadFromEnv_ZeroMaxJobs(t *testing.T) {
 	}
 }
 
-func TestConnectionString(t *testing.T) {
-	cfg := &Config{
-		PGHost:     "localhost",
-		PGPort:     "5432",
-		PGUser:     "user",
-		PGPassword: "pass",
-		PGDatabase: "db",
-	}
-
-	conn := cfg.ConnectionString()
-	expected := "host=localhost port=5432 user=user password=pass dbname=db sslmode=verify-full"
-	if conn != expected {
-		t.Errorf("Expected %q, got %q", expected, conn)
-	}
-}
-
-func TestConnectionString_ExplicitSSLModeAndRootCert(t *testing.T) {
-	cfg := &Config{
-		PGHost:        "localhost",
-		PGPort:        "5432",
-		PGUser:        "user",
-		PGPassword:    "pass",
-		PGDatabase:    "db",
-		PGSSLMode:     "disable",
-		PGSSLRootCert: "/etc/ssl/ca.pem",
-	}
-
-	conn := cfg.ConnectionString()
-	expected := "host=localhost port=5432 user=user password=pass dbname=db sslmode=disable sslrootcert=/etc/ssl/ca.pem"
-	if conn != expected {
-		t.Errorf("Expected %q, got %q", expected, conn)
-	}
-}
-
 func TestPgxConnectionString(t *testing.T) {
 	cfg := &Config{
 		PGHost:     "localhost",
@@ -362,6 +330,38 @@ func TestPgxConnectionString_ExplicitSSLModeAndRootCert(t *testing.T) {
 	expected := "postgres://user:pass@localhost:5432/db?sslmode=require&sslrootcert=%2Fetc%2Fssl%2Fca.pem"
 	if conn != expected {
 		t.Errorf("Expected %q, got %q", expected, conn)
+	}
+}
+
+func TestPgxConnectionString_EscapesComponents(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *Config
+	}{
+		{"special chars in password", &Config{PGHost: "localhost", PGPort: "5432", PGUser: "postgres", PGPassword: "p@ss:w/rd?#&=", PGDatabase: "mirror_node"}},
+		{"space in password", &Config{PGHost: "localhost", PGPort: "5432", PGUser: "postgres", PGPassword: "pass word", PGDatabase: "mirror_node"}},
+		{"at sign in user", &Config{PGHost: "localhost", PGPort: "5432", PGUser: "user@domain", PGPassword: "pass", PGDatabase: "mirror_node"}},
+		{"ipv6 host", &Config{PGHost: "::1", PGPort: "5432", PGUser: "postgres", PGPassword: "pass", PGDatabase: "mirror_node"}},
+		{"space in database", &Config{PGHost: "localhost", PGPort: "5432", PGUser: "postgres", PGPassword: "pass", PGDatabase: "mirror node"}},
+	}
+
+	for _, tc := range tests {
+		parsed, err := url.Parse(tc.cfg.PgxConnectionString())
+		if err != nil {
+			t.Errorf("%s: connection string should parse as a URL: %v", tc.name, err)
+			continue
+		}
+		password, _ := parsed.User.Password()
+		if parsed.User.Username() != tc.cfg.PGUser || password != tc.cfg.PGPassword {
+			t.Errorf("%s: credentials did not survive escaping, got user=%q password=%q",
+				tc.name, parsed.User.Username(), password)
+		}
+		if parsed.Hostname() != tc.cfg.PGHost {
+			t.Errorf("%s: expected host %q, got %q", tc.name, tc.cfg.PGHost, parsed.Hostname())
+		}
+		if strings.TrimPrefix(parsed.Path, "/") != tc.cfg.PGDatabase {
+			t.Errorf("%s: expected database %q, got %q", tc.name, tc.cfg.PGDatabase, parsed.Path)
+		}
 	}
 }
 

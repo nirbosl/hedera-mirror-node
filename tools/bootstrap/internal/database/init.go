@@ -9,13 +9,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+
+	"mirrornode-bootstrap/internal/config"
 )
 
 const (
@@ -69,19 +70,14 @@ const (
 
 func sslModeOrDefault(mode string) string {
 	if mode == "" {
-		return "verify-full"
+		return config.DefaultSSLMode
 	}
 	return mode
 }
 
-// buildConnString builds a connection string to AdminHost/AdminPort with cfg's TLS settings.
 func buildConnString(user, password, dbname string, cfg InitConfig) string {
-	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		user, password, cfg.AdminHost, cfg.AdminPort, dbname, sslModeOrDefault(cfg.PGSSLMode))
-	if cfg.PGSSLRootCert != "" {
-		connString += "&sslrootcert=" + url.QueryEscape(cfg.PGSSLRootCert)
-	}
-	return connString
+	return config.BuildConnURL(user, password, cfg.AdminHost, cfg.AdminPort, dbname,
+		sslModeOrDefault(cfg.PGSSLMode), cfg.PGSSLRootCert)
 }
 
 // Initialize performs full database initialization: downloads and runs init.sh to create
