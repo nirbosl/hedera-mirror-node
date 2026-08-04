@@ -5,6 +5,7 @@ package database
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,8 +19,15 @@ import (
 )
 
 const (
+	// InitScriptCommitSHA pins init.sh to a commit
+	InitScriptCommitSHA = "846f9fa0ae4f4069434eca07024767519144294e"
+
 	// InitScriptURL is the URL to download the init.sh script from
-	InitScriptURL = "https://raw.githubusercontent.com/hiero-ledger/hiero-mirror-node/846f9fa0ae4f4069434eca07024767519144294e/importer/src/main/resources/db/scripts/init.sh"
+	InitScriptURL = "https://raw.githubusercontent.com/hiero-ledger/hiero-mirror-node/" + InitScriptCommitSHA +
+		"/importer/src/main/resources/db/scripts/init.sh"
+
+	// InitScriptSHA256 is the expected checksum of the script at InitScriptURL
+	InitScriptSHA256 = "903fd0d0e3c43d0f4839f0603de69290474646d4d050619205483ea87a48974c"
 )
 
 // InitConfig holds configuration for database initialization.
@@ -104,11 +112,13 @@ func Initialize(ctx context.Context, cfg InitConfig) error {
 
 	// Download init.sh
 	initURL := cfg.InitScriptURL
+	expectedHash := ""
 	if initURL == "" {
 		initURL = InitScriptURL
+		expectedHash = InitScriptSHA256
 	}
 
-	initScript, err := downloadInitScript(initURL)
+	initScript, err := downloadInitScript(initURL, expectedHash)
 	if err != nil {
 		return fmt.Errorf("failed to download init.sh: %w", err)
 	}
@@ -138,7 +148,8 @@ func Initialize(ctx context.Context, cfg InitConfig) error {
 }
 
 // downloadInitScript downloads init.sh to a temporary file.
-func downloadInitScript(url string) (string, error) {
+// Verify content before writing it to disk (requires expectedHash to be set)
+func downloadInitScript(url, expectedHash string) (string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -149,13 +160,25 @@ func downloadInitScript(url string) (string, error) {
 		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
 	}
 
+	script, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if expectedHash != "" {
+		actualHash := fmt.Sprintf("%x", sha256.Sum256(script))
+		if actualHash != expectedHash {
+			return "", fmt.Errorf("checksum mismatch for %s: expected %s, got %s", url, expectedHash, actualHash)
+		}
+	}
+
 	tmpFile, err := os.CreateTemp("", "init-*.sh")
 	if err != nil {
 		return "", err
 	}
 	defer tmpFile.Close()
 
-	if _, err := io.Copy(tmpFile, resp.Body); err != nil {
+	if _, err := tmpFile.Write(script); err != nil {
 		os.Remove(tmpFile.Name())
 		return "", err
 	}

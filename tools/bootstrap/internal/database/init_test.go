@@ -4,6 +4,8 @@ package database
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -35,7 +37,7 @@ func TestInitScriptURL(t *testing.T) {
 		t.Error("InitScriptURL constant should not be empty")
 	}
 
-	expected := "https://raw.githubusercontent.com/hiero-ledger/hiero-mirror-node/846f9fa0ae4f4069434eca07024767519144294e/importer/src/main/resources/db/scripts/init.sh"
+	expected := fmt.Sprintf("https://raw.githubusercontent.com/hiero-ledger/hiero-mirror-node/%s/importer/src/main/resources/db/scripts/init.sh", InitScriptCommitSHA)
 	if InitScriptURL != expected {
 		t.Errorf("InitScriptURL mismatch:\nexpected: %s\ngot: %s", expected, InitScriptURL)
 	}
@@ -57,7 +59,7 @@ func TestDownloadInitScript_Success(t *testing.T) {
 	defer server.Close()
 
 	// Download the script
-	path, err := downloadInitScript(server.URL)
+	path, err := downloadInitScript(server.URL, "")
 	if err != nil {
 		t.Fatalf("downloadInitScript failed: %v", err)
 	}
@@ -93,16 +95,57 @@ func TestDownloadInitScript_HTTPError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := downloadInitScript(server.URL)
+	_, err := downloadInitScript(server.URL, "")
 	if err == nil {
 		t.Error("Expected error for HTTP 404, got nil")
 	}
 }
 
 func TestDownloadInitScript_InvalidURL(t *testing.T) {
-	_, err := downloadInitScript("http://invalid.invalid.invalid/notfound")
+	_, err := downloadInitScript("http://invalid.invalid.invalid/notfound", "")
 	if err == nil {
 		t.Error("Expected error for invalid URL, got nil")
+	}
+}
+
+func TestDownloadInitScript_ChecksumMatch(t *testing.T) {
+	scriptContent := "#!/bin/bash\necho 'test script'\n"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(scriptContent))
+	}))
+	defer server.Close()
+
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(scriptContent)))
+	path, err := downloadInitScript(server.URL, hash)
+	if err != nil {
+		t.Fatalf("downloadInitScript failed on a matching checksum: %v", err)
+	}
+	defer os.Remove(path)
+}
+
+func TestDownloadInitScript_ChecksumMismatch(t *testing.T) {
+	tmpDir := t.TempDir()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("#!/bin/bash\necho 'tampered'\n"))
+	}))
+	defer server.Close()
+
+	t.Setenv("TMPDIR", tmpDir)
+
+	_, err := downloadInitScript(server.URL, InitScriptSHA256)
+	if err == nil {
+		t.Fatal("Expected a checksum mismatch error")
+	}
+	if !contains(err.Error(), "checksum mismatch") {
+		t.Errorf("Expected 'checksum mismatch' error, got: %v", err)
+	}
+
+	entries, err := os.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatalf("Failed to read temp dir: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("A tampered script should not be written to disk, found %d file(s)", len(entries))
 	}
 }
 
