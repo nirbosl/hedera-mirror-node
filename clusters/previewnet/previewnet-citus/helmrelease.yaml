@@ -63,6 +63,11 @@ spec:
         persistentVolume:
           size: 65Gi
       worker:
+        overrides:
+          - index: 0
+            pods:
+              persistentVolume:
+                size: 203Gi # revert and manually recreate the pvc / cluster on next previewnet reset
         persistentVolume:
           size: 90Gi
     test:
