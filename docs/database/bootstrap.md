@@ -395,7 +395,7 @@ The `bootstrap init` command creates the database, roles, and permissions, valid
 
 The `bootstrap import` command imports all data files into PostgreSQL using parallel streaming COPY operations. All parallelism is managed internally via Go goroutines.
 
-> [!IMPORTANT] > `--manifest` must match the data you downloaded in [step 3.4](#34-download-the-data): `manifest.minimal.csv` if you downloaded the **minimal** DB data, `manifest.csv` if you downloaded the **full** DB data; `manifest.csv` lists `*_atma.csv.gz` files, which are never present in a minimal download, hence pointing `--manifest` at it after a minimal download will fail to import every one of those files.
+> [!IMPORTANT] > `--manifest` must match the data you downloaded in [step 3.4](#34-download-the-data): `manifest.minimal.csv` if you downloaded the **minimal** DB data, `manifest.csv` if you downloaded the **full** DB data. `manifest.csv` lists `*_atma.csv.gz` files, which are never present in a minimal download - pointing `--manifest` at it after a minimal download will fail every one of those files with "no such file or directory".
 
 **Option A: Interactive Mode (stay connected)**
 
