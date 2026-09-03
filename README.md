@@ -14,7 +14,7 @@ Create a standard GKE cluster with at least Kubernetes 1.32.
 
 ```bash
 brew install kubeseal ksd yq
-helm upgrade -i --wait --create-namespace -n flux-system sealed-secrets oci://registry-1.docker.io/bitnamicharts/sealed-secrets --set keyrenewperiod=0s
+helm upgrade -i --wait=legacy --create-namespace -n flux-system sealed-secrets oci://registry-1.docker.io/bitnamicharts/sealed-secrets --set keyrenewperiod=0s
 ```
 
 ### FluxCD
