@@ -22,9 +22,11 @@ function ensureEnvVar() {
 
 mask() {
   set +x
-  if [[ "${GITHUB_ACTIONS:-}" == "true" && -n "${1:-}" ]]; then
-    printf '::add-mask::%s\n' "$1"
-  fi
+  [[ "${GITHUB_ACTIONS:-}" == "true" && -n "${1:-}" ]] || return 0
+
+  while IFS= read -r line; do
+    [[ -n "${line}" ]] && printf '::add-mask::%s\n' "${line}"
+  done <<< "$1"
 }
 
 maskJsonValues() {
@@ -986,7 +988,6 @@ function updateStackgresCreds() {
   local web3Password=$(echo "${mirrorNodePasswords}" | jq -r '.HIERO_MIRROR_WEB3_DB_PASSWORD'| base64 -d)
   local dbName=$(echo "${mirrorNodePasswords}" | jq -r '.HIERO_MIRROR_IMPORTER_DB_NAME'| base64 -d)
 
-  # Handed to psql as variables, so a quote or newline in a value stays data
   local psqlVars=(-v ON_ERROR_STOP=1) name
   for name in superuserUsername superuserPassword replicationUsername replicationPassword \
               authenticatorUsername authenticatorPassword graphqlUsername graphqlPassword \
@@ -1012,7 +1013,6 @@ alter user :"replicationUsername" with password :'replicationPassword';
 alter user :"authenticatorUsername" with password :'authenticatorPassword';
 
 \c :"dbName"
--- authinfo is a libpq conninfo string, so the password needs conninfo quoting too
 insert into pg_dist_authinfo(nodeid, rolename, authinfo)
   select 0,
          rolename,
