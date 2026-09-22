@@ -24,8 +24,9 @@ mask() {
   set +x
   [[ "${GITHUB_ACTIONS:-}" == "true" && -n "${1:-}" ]] || return 0
 
+  local line
   while IFS= read -r line; do
-    [[ -n "${line}" ]] && printf '::add-mask::%s\n' "${line}"
+    [[ -z "${line}" ]] || printf '::add-mask::%s\n' "${line}"
   done <<< "$1"
 }
 
