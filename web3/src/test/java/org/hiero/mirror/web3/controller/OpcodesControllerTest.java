@@ -50,6 +50,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tuweni.bytes.Bytes;
 import org.hamcrest.core.StringContains;
 import org.hiero.mirror.common.domain.DomainBuilder;
+import org.hiero.mirror.common.domain.contract.ContractTransactionHash;
 import org.hiero.mirror.common.domain.entity.Entity;
 import org.hiero.mirror.common.domain.entity.EntityId;
 import org.hiero.mirror.rest.model.Opcode;
@@ -70,6 +71,7 @@ import org.hiero.mirror.web3.repository.ContractTransactionHashRepository;
 import org.hiero.mirror.web3.repository.EthereumTransactionRepository;
 import org.hiero.mirror.web3.repository.RecordFileRepository;
 import org.hiero.mirror.web3.repository.TransactionRepository;
+import org.hiero.mirror.web3.repository.projections.ContractTransactionHashLookup;
 import org.hiero.mirror.web3.service.ContractDebugService;
 import org.hiero.mirror.web3.service.OpcodeService;
 import org.hiero.mirror.web3.service.OpcodeServiceImpl;
@@ -290,6 +292,30 @@ class OpcodesControllerTest {
                 });
     }
 
+    private static ContractTransactionHashLookup lookup(final ContractTransactionHash hash) {
+        return new ContractTransactionHashLookup() {
+            @Override
+            public long getConsensusTimestamp() {
+                return hash.getConsensusTimestamp();
+            }
+
+            @Override
+            public long getEntityId() {
+                return hash.getEntityId();
+            }
+
+            @Override
+            public long getPayerAccountId() {
+                return hash.getPayerAccountId();
+            }
+
+            @Override
+            public Integer getTransactionResult() {
+                return hash.getTransactionResult();
+            }
+        };
+    }
+
     TransactionIdOrHashParameter setUp(final TransactionProviderEnum provider) {
         provider.init(DOMAIN_BUILDER);
 
@@ -328,7 +354,8 @@ class OpcodesControllerTest {
                 .block(BlockType.of(recordFile.getIndex().toString()))
                 .build());
 
-        when(contractTransactionHashRepository.findByHash(hash)).thenReturn(Optional.of(contractTransactionHash));
+        when(contractTransactionHashRepository.findAllByHash(hash))
+                .thenReturn(List.of(lookup(contractTransactionHash)));
         when(transactionRepository.findByPayerAccountIdAndValidStartNsOrderByConsensusTimestampAsc(
                         payerAccountId, validStartNs))
                 .thenReturn(List.of(transaction));
@@ -461,9 +488,9 @@ class OpcodesControllerTest {
                 switch (transactionIdOrHash) {
                     case TransactionHashParameter parameter -> {
                         reset(contractTransactionHashRepository);
-                        when(contractTransactionHashRepository.findByHash(
+                        when(contractTransactionHashRepository.findAllByHash(
                                         parameter.hash().toArray()))
-                                .thenReturn(Optional.empty());
+                                .thenReturn(List.of());
                         yield new GenericErrorResponse(message, "Contract transaction hash not found: " + parameter);
                     }
                     case TransactionIdParameter parameter -> {
