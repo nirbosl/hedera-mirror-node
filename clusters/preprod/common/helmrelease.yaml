@@ -85,6 +85,15 @@ spec:
           namespace: performance
     traefik:
       extraObjects:
+        - |
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: traefik-dashboard-auth
+          type: kubernetes.io/basic-auth
+          data:
+            username: {{ "admin" | b64enc }}
+            password: {{ dig "data" "password" (randAlphaNum 40 | b64enc) (lookup "v1" "Secret" .Release.Namespace "traefik-dashboard-auth") }}
         - apiVersion: traefik.io/v1alpha1
           kind: Middleware
           metadata:
