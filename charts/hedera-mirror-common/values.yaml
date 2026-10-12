@@ -422,8 +422,7 @@ traefik:
   deployment:
     kind: DaemonSet
   enabled: true
-  globalArguments:
-    - --api.insecure=true
+  globalArguments: []
   logs:
     access:
       enabled: true
