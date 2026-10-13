@@ -207,7 +207,7 @@ open "http://localhost:8080"
 To view the Traefik dashboard:
 
 ```shell
-kubectl get secret traefik-dashboard-auth --template '{{ printf "%s / %s\n" (.data.username | base64decode) (.data.password | base64decode) }}'
+kubectl get secret ${RELEASE}-hedera-mirror-common-traefik-dashboard --template '{{ printf "%s / %s\n" (.data.username | base64decode) (.data.password | base64decode) }}'
 kubectl port-forward daemonset/${RELEASE}-traefik 8080:8080 &
 open "http://localhost:8080/dashboard/"
 ```

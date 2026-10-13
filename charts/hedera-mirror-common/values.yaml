@@ -423,11 +423,6 @@ traefik:
     kind: DaemonSet
   enabled: true
   globalArguments: []
-  ingressRoute:
-    dashboard:
-      enabled: true
-      middlewares:
-        - name: traefik-dashboard-auth
   logs:
     access:
       enabled: true
@@ -467,6 +462,11 @@ traefik:
   service:
     spec: {}
     type: ClusterIP
+
+traefikDashboard:
+  enabled: true
+  password: ""  # Default to a randomly generated password
+  username: admin
 
 zfs:
   alloy:
