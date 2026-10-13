@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+
+{{ if and .Values.traefik.enabled .Values.traefik.ingressRoute.dashboard.enabled -}}
+{{- $name := "traefik-dashboard-auth" -}}
+{{- $namespace := default .Release.Namespace .Values.traefik.namespaceOverride -}}
+{{- $secret := lookup "v1" "Secret" $namespace $name | default dict -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+type: kubernetes.io/basic-auth
+data:
+  password: {{ dig "data" "password" (randAlphaNum 40 | b64enc) $secret }}
+  username: {{ "admin" | b64enc }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+spec:
+  basicAuth:
+    secret: {{ $name }}
+{{- end }}

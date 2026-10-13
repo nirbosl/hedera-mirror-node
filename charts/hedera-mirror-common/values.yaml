@@ -423,6 +423,11 @@ traefik:
     kind: DaemonSet
   enabled: true
   globalArguments: []
+  ingressRoute:
+    dashboard:
+      enabled: true
+      middlewares:
+        - name: traefik-dashboard-auth
   logs:
     access:
       enabled: true
