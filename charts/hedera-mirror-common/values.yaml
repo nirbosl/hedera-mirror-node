@@ -419,6 +419,10 @@ traefik:
             labelSelector:
               matchLabels:
                 app.kubernetes.io/name: traefik
+  dashboard:
+    enabled: true
+    password: ""  # Default to a randomly generated password
+    username: admin
   deployment:
     kind: DaemonSet
   enabled: true
@@ -462,11 +466,6 @@ traefik:
   service:
     spec: {}
     type: ClusterIP
-
-traefikDashboard:
-  enabled: true
-  password: ""  # Default to a randomly generated password
-  username: admin
 
 zfs:
   alloy:
