@@ -546,15 +546,35 @@ function deleteDisk() {
   fi
 }
 
-function replaceDiskFromSnapshot() {
-  local diskName="${1}" diskZone="${2}" snapshotName="${3}" diskType="${4:-pd-balanced}"
-  local createPidRef="${5:-}"
-  deleteDisk "${diskName}" "${diskZone}"
-  local snapshotFullName
-  snapshotFullName="projects/${GCP_SNAPSHOT_PROJECT}/global/snapshots/${snapshotName}"
+function getCitusDiskSpec() {
+  local diskName="${1}" diskZone="${2}"
+  local spec diskType provisionedIops provisionedThroughput
+  spec="$(describeDiskSpec "${diskName}" "${diskZone}")" || exit 1
 
-  log "Recreating disk ${diskName} using snapshot ${snapshotName} in zone ${diskZone}"
-  watchInBackground "$$" gcloud compute disks create "${diskName}" --project "${GCP_TARGET_PROJECT}" --zone "${diskZone}" --source-snapshot "${snapshotFullName}" --type="${diskType}" --quiet &
+  if [[ -z "${spec}" ]]; then
+    log "Disk ${diskName} not found in ${diskZone}; using zfs-manager disk configuration"
+    diskType="$(getZfsManagerEnv DISK_TYPE)" || exit 1
+    provisionedIops="$(getZfsManagerEnv DISK_PROVISIONED_IOPS)" || exit 1
+    provisionedThroughput="$(getZfsManagerEnv DISK_PROVISIONED_THROUGHPUT)" || exit 1
+    spec="${diskType},${provisionedIops},${provisionedThroughput}"
+  fi
+
+  echo "${spec}"
+}
+
+function replaceDiskFromSnapshot() {
+  local diskName="${1}" diskZone="${2}" snapshotName="${3}" diskSpec="${4:-}"
+  local createPidRef="${5:-}"
+  local snapshotFullName snapshotSizeGb diskSpecArgs
+  snapshotFullName="projects/${GCP_SNAPSHOT_PROJECT}/global/snapshots/${snapshotName}"
+  snapshotSizeGb="$(gcloud compute snapshots describe "${snapshotName}" \
+                      --project "${GCP_SNAPSHOT_PROJECT}" \
+                      --format='value(diskSizeGb)')"
+  mapfile -t diskSpecArgs < <(getDiskSpecArgs "${diskSpec}" "${snapshotSizeGb}")
+  deleteDisk "${diskName}" "${diskZone}"
+
+  log "Recreating disk ${diskName} using snapshot ${snapshotName} in zone ${diskZone} with ${diskSpecArgs[*]}"
+  watchInBackground "$$" gcloud compute disks create "${diskName}" --project "${GCP_TARGET_PROJECT}" --zone "${diskZone}" --source-snapshot "${snapshotFullName}" "${diskSpecArgs[@]}" --quiet &
   local pid=$!
   if [[ -n "${createPidRef}" ]]; then
       printf -v "${createPidRef}" '%s' "${pid}"
@@ -568,11 +588,12 @@ function replaceMinioDisk() {
   fi
 
   scaleDeployment "${COMMON_NAMESPACE}" 0 "${MINIO_RESOURCE_SELECTOR}"
-  local diskName diskZone snapshotName bgPid
+  local diskName diskZone snapshotName diskSpec bgPid
   diskName="$(getMinioDiskName)"
   diskZone="$(getZoneFromPv "${diskName}")"
   snapshotName="${MINIO_SNAPSHOT_PREFIX}-${SNAPSHOT_ID}"
-  replaceDiskFromSnapshot "${diskName}" "${diskZone}" "${snapshotName}" "pd-ssd" bgPid
+  diskSpec="$(describeDiskSpec "${diskName}" "${diskZone}")"
+  replaceDiskFromSnapshot "${diskName}" "${diskZone}" "${snapshotName}" "${diskSpec:-pd-ssd,,}" bgPid
   log "Waiting for MinIO disk to be created"
   wait "${bgPid}"
   scaleDeployment "${COMMON_NAMESPACE}" 1 "${MINIO_RESOURCE_SELECTOR}"
@@ -651,13 +672,14 @@ function replaceDisks() {
     kubectl delete sgshardedbackups.stackgres.io --all -A
     resizeCitusNodePools 0
     for nodeId in "${UNIQUE_NODE_IDS[@]}"; do
-      local nodeInfo diskName diskZone snapshotName snapshotFullName
+      local nodeInfo diskName diskZone snapshotName snapshotFullName diskSpec
 
       nodeInfo=$(echo "${NODE_ID_MAP}" | jq -r --arg NODE_ID "${nodeId}" '.[$NODE_ID]')
       diskName="${DISK_PREFIX}-${nodeId}-zfs"
       diskZone=$(echo "${nodeId}" | cut -d '-' -f 2-4)
       snapshotName=$(echo "${nodeInfo}" | jq -r '.snapshot[0].name')
-      replaceDiskFromSnapshot "${diskName}" "${diskZone}" "${snapshotName}"
+      diskSpec="$(getCitusDiskSpec "${diskName}" "${diskZone}")"
+      replaceDiskFromSnapshot "${diskName}" "${diskZone}" "${snapshotName}" "${diskSpec}"
     done
 
     replaceMinioDisk

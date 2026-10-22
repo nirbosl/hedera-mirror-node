@@ -72,6 +72,10 @@ function configureAndValidate() {
     exit 1
   fi
 
+  DISK_DEVICE_NAME="$(getZfsManagerEnv DISK_DEVICE_NAME)"
+  DISK_DEVICE_NAME="${DISK_DEVICE_NAME:-sdb}"
+  requireSafeToken "DISK_DEVICE_NAME" "${DISK_DEVICE_NAME}" '^[a-z0-9-]+$'
+
   POOL_NAME="$(kubectl get storageclasses.storage.k8s.io zfs -o jsonpath='{.parameters.poolname}')"
   if [[ -z "${POOL_NAME}" ]]; then
     log "POOL_NAME can not be empty. Exiting"
@@ -133,6 +137,40 @@ function execOnNode() {
   local pod="$1"
   local cmd="$2"
   kubectl exec -n "${COMMON_NAMESPACE}" "${pod}" -- chroot /node-fs /bin/bash -c "${cmd}"
+}
+
+function resolveNodeDiskDevice() {
+  local pod="$1" deviceName="$2"
+  local attempts=0 devicePath
+
+  until devicePath="$(execOnNode "${pod}" \
+    "for candidate in /dev/${deviceName} /dev/disk/by-id/google-${deviceName} /dev/disk/by-id/scsi-0Google_PersistentDisk_${deviceName}; do \
+       if [ -b \"\${candidate}\" ]; then echo \"\${candidate}\"; exit 0; fi; \
+     done; \
+     udevadm settle; \
+     exit 1" 2>/dev/null)"; do
+    attempts=$((attempts + 1))
+    if [[ ${attempts} -ge 30 ]]; then
+      log "Unable to find block device ${deviceName} via pod ${pod} after ${attempts} attempts. Exiting"
+      exit 1
+    fi
+    log "Block device ${deviceName} not found yet via pod ${pod}, attempt ${attempts}. Waiting..."
+    sleep 2
+  done
+
+  echo "${devicePath}"
+}
+
+# Matches zfs_append_partition so the imported vdev path is the one zfs-manager passes to zpool online -e.
+function getDiskPartitionPath() {
+  local devicePath="$1"
+  if [[ "${devicePath}" == /dev/disk/* ]]; then
+    echo "${devicePath}-part1"
+  elif [[ "${devicePath}" == *[0-9] ]]; then
+    echo "${devicePath}p1"
+  else
+    echo "${devicePath}1"
+  fi
 }
 
 # Runs the zfs snapshot/send/receive chain detached on the node so a local disconnect can't kill it, then polls for completion.
@@ -261,9 +299,13 @@ function reduceDiskSizes() {
     -o jsonpath='{.metadata.ownerReferences[0].name}' \
     "${DISK_NODE_ID}" )"
     NEW_DISK_NAME="${DISK_NAME}-resize-${EPOCH_SECONDS}"
+    DISK_SPEC="$(describeDiskSpec "${DISK_NAME}" "${DISK_ZONE}")"
+    mapfile -t DISK_SPEC_ARGS < <(getDiskSpecArgs "${DISK_SPEC}")
+    mapfile -t SNAPSHOT_DISK_SPEC_ARGS < <(getDiskSpecArgs "${DISK_SPEC}" "${DISK_SIZE}")
+    log "Creating ${NEW_DISK_NAME} with ${DISK_SPEC_ARGS[*]}"
     gcloud compute disks create "${NEW_DISK_NAME}" \
                     --project="${GCP_TARGET_PROJECT}" \
-                    --type=pd-balanced \
+                    "${DISK_SPEC_ARGS[@]}" \
                     --size="${DISK_SIZE}GB" \
                     --zone="${DISK_ZONE}"
     gcloud compute instances attach-disk "${INSTANCE_NAME}" \
@@ -326,9 +368,11 @@ EOF
     -n "${COMMON_NAMESPACE}" \
     -l instance="${INSTANCE_NAME}" \
     -o jsonpath='{.items[*].metadata.name}')
+    TEMP_DISK_PATH="$(resolveNodeDiskDevice "${DAEMONSET_POD}" "${TEMP_DISK_DEVICE}")"
+    log "Creating pool ${TEMP_POOL_NAME} on ${TEMP_DISK_PATH}"
     kubectl exec -n "${COMMON_NAMESPACE}" "${DAEMONSET_POD}" -- bash \
     -c "chroot /node-fs /bin/bash -c \
-       'zpool create -o autoexpand=on ${TEMP_POOL_NAME} /dev/${TEMP_DISK_DEVICE}'"
+       'zpool create -o autoexpand=on ${TEMP_POOL_NAME} ${TEMP_DISK_PATH}'"
 
     PVCS=$(echo "${NODE_ID_MAP}" | jq -r --arg DISK_NODE_ID "${DISK_NODE_ID}" '.[$DISK_NODE_ID].pvcs')
     NODE_PVC_COUNT=$(echo "${PVCS}" | jq -r 'length - 1')
@@ -356,6 +400,13 @@ EOF
       log "Finished copy for pvc ${PVC_VOLUME} to ${TEMP_POOL_NAME}/${PVC_VOLUME}"
     done
 
+    ZFS_MANAGER_POD="$(kubectl get pods -n "${COMMON_NAMESPACE}" -l 'app=zfs-manager' \
+      --field-selector spec.nodeName="${INSTANCE_NAME}" -o jsonpath='{.items[*].metadata.name}')"
+    if [[ -n "${ZFS_MANAGER_POD}" ]]; then
+      log "Unmounting ${POOL_NAME} root dataset in pod ${ZFS_MANAGER_POD}"
+      kubectl exec -n "${COMMON_NAMESPACE}" "${ZFS_MANAGER_POD}" -- umount "/node/${POOL_NAME}" 2>/dev/null || true
+    fi
+
     kubectl exec -it -n "${COMMON_NAMESPACE}" "${DAEMONSET_POD}" -- bash -c \
       "chroot /node-fs /bin/bash -c \
       'zpool destroy ${POOL_NAME} && \
@@ -374,7 +425,7 @@ EOF
     gcloud compute disks create "${DISK_NAME}" \
     --project="${GCP_TARGET_PROJECT}" \
     --zone="${DISK_ZONE}" \
-    --source-snapshot=projects/"${GCP_TARGET_PROJECT}"/global/snapshots/"${NEW_DISK_NAME}" --type=pd-balanced
+    --source-snapshot=projects/"${GCP_TARGET_PROJECT}"/global/snapshots/"${NEW_DISK_NAME}" "${SNAPSHOT_DISK_SPEC_ARGS[@]}"
     gcloud compute instances detach-disk "${INSTANCE_NAME}" \
     --disk="${NEW_DISK_NAME}" --zone="${DISK_ZONE}" \
     --project="${GCP_TARGET_PROJECT}" --quiet
@@ -387,11 +438,15 @@ EOF
     --zone="${DISK_ZONE}" \
     --project="${GCP_TARGET_PROJECT}" \
     --quiet \
-    --device-name=sdb
+    --device-name="${DISK_DEVICE_NAME}"
 
+    DISK_PATH="$(resolveNodeDiskDevice "${DAEMONSET_POD}" "${DISK_DEVICE_NAME}")"
+    DISK_PARTITION_PATH="$(getDiskPartitionPath "${DISK_PATH}")"
+    log "Importing pool ${POOL_NAME} from ${DISK_PARTITION_PATH}"
     kubectl exec -it -n "${COMMON_NAMESPACE}" "${DAEMONSET_POD}" -- bash -c \
     "chroot /node-fs /bin/bash -c \
-    'zpool import ${POOL_NAME} && \
+    'udevadm settle && \
+     zpool import -d ${DISK_PARTITION_PATH} ${POOL_NAME} && \
      zpool upgrade ${POOL_NAME}'"
     kubectl delete -n "${COMMON_NAMESPACE}" daemonset "${INSTANCE_NAME}"
   done

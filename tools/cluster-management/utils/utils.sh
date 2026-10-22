@@ -828,6 +828,54 @@ function getDiskPrefix() {
   echo "${diskPrefix}"
 }
 
+function getZfsManagerEnv() {
+  local name="${1}"
+  kubectl get daemonsets -n "${COMMON_NAMESPACE}" -l 'app=zfs-manager' -o json |
+    jq -r --arg NAME "${name}" '.items[0].spec.template.spec.containers[0].env[] | select (.name == $NAME) | .value'
+}
+
+function describeDiskSpec() {
+  local diskName="${1}" diskZone="${2}"
+  local spec error
+
+  if spec="$(gcloud compute disks describe "${diskName}" \
+              --project "${GCP_TARGET_PROJECT}" \
+              --zone "${diskZone}" \
+              --format='csv[no-heading](type.basename(),provisionedIops,provisionedThroughput)' 2>/dev/null)"; then
+    echo "${spec}"
+    return 0
+  fi
+
+  error="$(gcloud compute disks describe "${diskName}" \
+            --project "${GCP_TARGET_PROJECT}" \
+            --zone "${diskZone}" 2>&1 >/dev/null || true)"
+  if [[ "${error}" == *"/disks/${diskName}' was not found"* ]]; then
+    return 0
+  fi
+
+  log "Unable to describe disk ${diskName} in ${diskZone}: ${error}"
+  exit 1
+}
+
+function getDiskSpecArgs() {
+  local diskSpec="${1}" sizeGb="${2:-}"
+  local diskType provisionedIops provisionedThroughput
+  IFS=',' read -r diskType provisionedIops provisionedThroughput <<<"${diskSpec}"
+
+  echo "--type=${diskType:-pd-balanced}"
+  if [[ "${diskType}" == hyperdisk-* && ( -n "${provisionedIops}" || -n "${provisionedThroughput}" ) ]]; then
+    if [[ -n "${provisionedIops}" ]]; then
+      echo "--provisioned-iops=${provisionedIops}"
+    fi
+    if [[ -n "${provisionedThroughput}" ]]; then
+      echo "--provisioned-throughput=${provisionedThroughput}"
+    fi
+    if [[ -n "${sizeGb}" ]]; then
+      echo "--size=${sizeGb}GB"
+    fi
+  fi
+}
+
 function getZFSVolumes() {
   kubectl get pv -o json |
     jq -r --arg CITUS_CLUSTERS "$(getCitusClusters)" \
