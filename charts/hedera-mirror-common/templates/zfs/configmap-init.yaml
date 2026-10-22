@@ -457,12 +457,14 @@ data:
         echo "${ARC_MIN}" >> /sys/module/zfs/parameters/zfs_arc_min
         echo "${ARC_MAX}" >> /sys/module/zfs/parameters/zfs_arc_max
 
+        udevadm settle || true
+
         if zfs list | grep -q "${POOL}"; then
           echo "Found existing pool. Skipping creation"
-        elif zpool create -o autoexpand=on "${POOL}" "${ZFS_DEVICE}"; then
-          echo "Successfully created pool"
         elif zpool import -f "${POOL}"; then
           echo "Successfully imported pool"
+        elif zpool create -o autoexpand=on "${POOL}" "${ZFS_DEVICE}"; then
+          echo "Successfully created pool"
         else
           echo "Unable to create pool. Manual intervention necessary"
           exit 1
