@@ -29,7 +29,11 @@ data:
     # Configurable environment variables
     CONFIG_MAP_NAME="{{ include "hedera-mirror-common.fullname" . }}-zfs-node-status"
     CONFIG_MAP_KEY="zfs-node-status.json"
+    DISK_DEVICE_NAME="${DISK_DEVICE_NAME:-sdb}"
     DISK_PREFIX="${DISK_PREFIX:-citus}"
+    DISK_PROVISIONED_IOPS="${DISK_PROVISIONED_IOPS:-}"
+    DISK_PROVISIONED_THROUGHPUT="${DISK_PROVISIONED_THROUGHPUT:-}"
+    DISK_TYPE="${DISK_TYPE:-pd-balanced}"
     DEFAULT_DISK_SIZE_COORDINATOR="${DEFAULT_DISK_SIZE_COORDINATOR:-75GB}"
     DEFAULT_DISK_SIZE_WORKER="${DEFAULT_DISK_SIZE_WORKER:-152GB}"
     K8S_NAMESPACE="${K8S_NAMESPACE:-common}"
@@ -60,6 +64,37 @@ data:
       echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") ${1}" >&2
     }
 
+    function resolveDiskDevice() {
+      local candidate
+      for candidate in "/dev/${DISK_DEVICE_NAME}" \
+                       "/dev/disk/by-id/google-${DISK_DEVICE_NAME}" \
+                       "/dev/disk/by-id/scsi-0Google_PersistentDisk_${DISK_DEVICE_NAME}"; do
+        if chroot "${ROOT_MOUNT_DIR}" /bin/bash -c "test -b \"${candidate}\"" &>/dev/null; then
+          echo "${candidate}"
+          return 0
+        fi
+      done
+      return 1
+    }
+
+    function waitForDiskDevice() {
+      local attempts=0
+
+      until ZFS_DEVICE="$(resolveDiskDevice)"; do
+        attempts=$((attempts + 1))
+        if [[ ${attempts} -ge 30 ]]; then
+          log "Unable to find block device for ${DISK_NAME} (device name ${DISK_DEVICE_NAME}) on ${NODE_NAME} after ${attempts} attempts. Exiting ..."
+          exit 1
+        fi
+        log "Block device for ${DISK_NAME} not found yet attempt ${attempts}. Waiting ..."
+        chroot "${ROOT_MOUNT_DIR}" /bin/bash -c "udevadm settle" &>/dev/null || true
+        sleep 2
+      done
+
+      export ZFS_DEVICE
+      log "Using block device ${ZFS_DEVICE} for ${DISK_NAME}"
+    }
+
     function forceSizeScan() {
       log "Expanding pool to disk size"
 
@@ -68,7 +103,7 @@ data:
         zfs list || true
         partprobe || true
 
-        zpool online -e \"${POOL}\" /dev/sdb
+        zpool online -e \"${POOL}\" \"${ZFS_DEVICE}\"
         rc=\$?
 
         zfs list || true
@@ -159,8 +194,8 @@ data:
       # During bootstrap this runs before ensureDiskAttached/setupZFSPool, so the
       # disk may not be attached to this node yet and there's no local pool to
       # scan. Only require the scan to succeed once the device is actually here.
-      if ! chroot "${ROOT_MOUNT_DIR}" /bin/bash -c "test -b /dev/sdb" &>/dev/null; then
-        log "/dev/sdb not attached to this node yet; skipping pool expand for now"
+      if ! ZFS_DEVICE="$(resolveDiskDevice)"; then
+        log "${DISK_DEVICE_NAME} not attached to this node yet; skipping pool expand for now"
         return 0
       fi
 
@@ -366,7 +401,7 @@ data:
       log "Attaching ${DISK_NAME} to ${NODE_NAME}"
       local attempts=0
 
-      until gcloud compute instances attach-disk "${NODE_NAME}" --device-name=sdb --disk "${DISK_NAME}" --zone "${ZONE}"; do
+      until gcloud compute instances attach-disk "${NODE_NAME}" --device-name="${DISK_DEVICE_NAME}" --disk "${DISK_NAME}" --zone "${ZONE}"; do
         attempts=$((attempts + 1))
         if [[ ${attempts} -ge 15 ]]; then
           log "Unable to attach ${DISK_NAME} to ${NODE_NAME} in ${ZONE} after ${attempts} attempts. Exiting ..."
@@ -386,14 +421,24 @@ data:
       actual="$(gcloud compute disks list --filter="name:${DISK_NAME}" --format="value(sizeGb)" 2>/dev/null || true)"
 
       if [[ -z "${actual}" ]]; then
-        log "Creating ${DISK_NAME} for ${CITUS_ROLE} with size ${DISK_SIZE}"
-        gcloud compute disks create "${DISK_NAME}" --size="${DISK_SIZE}" --zone="${ZONE}" --type=pd-balanced --quiet
+        local createArgs=(--size="${DISK_SIZE}" --zone="${ZONE}" --type="${DISK_TYPE}" --quiet)
+        if [[ "${DISK_TYPE}" == hyperdisk-* ]]; then
+          if [[ -n "${DISK_PROVISIONED_IOPS}" ]]; then
+            createArgs+=(--provisioned-iops="${DISK_PROVISIONED_IOPS}")
+          fi
+          if [[ -n "${DISK_PROVISIONED_THROUGHPUT}" ]]; then
+            createArgs+=(--provisioned-throughput="${DISK_PROVISIONED_THROUGHPUT}")
+          fi
+        fi
+        log "Creating ${DISK_NAME} for ${CITUS_ROLE} with size ${DISK_SIZE} and type ${DISK_TYPE}"
+        gcloud compute disks create "${DISK_NAME}" "${createArgs[@]}"
       else
         log "${DISK_NAME} already exists for ${CITUS_ROLE}"
         growDiskToSizeGb "${DISK_SIZE}"
       fi
 
       ensureDiskAttached
+      waitForDiskDevice
     }
 
     function setupZFSPool() {
@@ -414,7 +459,7 @@ data:
 
         if zfs list | grep -q "${POOL}"; then
           echo "Found existing pool. Skipping creation"
-        elif zpool create -o autoexpand=on "${POOL}" /dev/sdb; then
+        elif zpool create -o autoexpand=on "${POOL}" "${ZFS_DEVICE}"; then
           echo "Successfully created pool"
         elif zpool import -f "${POOL}"; then
           echo "Successfully imported pool"
@@ -455,7 +500,7 @@ data:
 
         zfs set primarycache=metadata xattr=sa "${POOL}"
         zpool set autoexpand=on "${POOL}"
-        zpool online -e "${POOL}" /dev/sdb
+        zpool online -e "${POOL}" "${ZFS_DEVICE}"
         zfs list
     EOF
     }

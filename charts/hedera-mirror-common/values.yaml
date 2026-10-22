@@ -402,6 +402,7 @@ testkube:
         K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM: "true"
     delay: 600s  # Delay duration between test suite steps. This needs to be at least 600s to match the pgbouncer server
                  # connection idle timeout, so that connections will be freed up for the next set of tests
+    artifactStorageClassName: standard
     extraExecutionRequestVariables: {}
     gitBranch: ""  # Default to .Chart.AppVersion
     schedule: ""  # Cron schedule of the test suite, default to no schedule
@@ -491,6 +492,11 @@ zfs:
   # ZFS daemonset bootstrap configuration
   init:
     arcSizeGb: 2
+    disk:
+      deviceName: sdb
+      provisionedIops: ""
+      provisionedThroughput: ""
+      type: pd-balanced
     diskPrefix: citus
     image:
       pullPolicy: IfNotPresent
