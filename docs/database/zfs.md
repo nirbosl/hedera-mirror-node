@@ -64,12 +64,23 @@ zfs:
   init:
     disk:
       type: hyperdisk-balanced
-      provisionedIops: "3000"
-      provisionedThroughput: "140"
+      coordinator:
+        provisionedIops: 3000
+        provisionedThroughput: 140
+      worker:
+        provisionedIops: 6000
+        provisionedThroughput: 180
+      nodes:
+        worker-us-central1-a-0:
+          provisionedIops: 9000
 ```
 
-- Always set `provisionedIops` and `provisionedThroughput` (MiB/s). If left empty, Compute Engine applies size-based
-  defaults that can be considerably more expensive on large disks. They are only passed for `hyperdisk-*` disk types.
+- `provisionedIops` and `provisionedThroughput` (MiB/s) are set per role, and `nodes` overrides them for a single node
+  by its ZFS node ID (the `<role>-<zone>-<index>` part of the disk name). Unset fields fall back to the role value.
+- If both are empty, Compute Engine applies size-based defaults that can be considerably more expensive on large disks.
+  They are only passed for `hyperdisk-*` disk types.
+- Values are applied when a disk is created. For an existing disk, each value is only ever raised to the configured one
+  when the zfs-manager pod starts, never lowered. Compute Engine allows one change of each every four hours.
 - Hyperdisk size can only be changed twice per four hours, so consider a larger `zfs.autoGrow.maxStepGb`.
 - The disk is attached with device name `zfs.init.disk.deviceName` (default `sdb`) and resolved through
   `/dev/disk/by-id/google-<deviceName>` when `/dev/<deviceName>` does not exist.

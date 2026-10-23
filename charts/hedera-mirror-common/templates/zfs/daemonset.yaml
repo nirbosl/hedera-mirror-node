@@ -33,10 +33,8 @@ spec:
               value: "{{ .Values.zfs.init.disk.deviceName }}"
             - name: DISK_PREFIX
               value: {{ .Values.zfs.init.diskPrefix }}
-            - name: DISK_PROVISIONED_IOPS
-              value: "{{ .Values.zfs.init.disk.provisionedIops }}"
-            - name: DISK_PROVISIONED_THROUGHPUT
-              value: "{{ .Values.zfs.init.disk.provisionedThroughput }}"
+            - name: DISK_PERFORMANCE
+              value: {{ pick .Values.zfs.init.disk "coordinator" "nodes" "worker" | toJson | quote }}
             - name: DISK_TYPE
               value: "{{ .Values.zfs.init.disk.type }}"
             - name: DEFAULT_DISK_SIZE_COORDINATOR

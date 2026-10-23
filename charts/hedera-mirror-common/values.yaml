@@ -493,10 +493,15 @@ zfs:
   init:
     arcSizeGb: 2
     disk:
+      coordinator:
+        provisionedIops: ""
+        provisionedThroughput: ""
       deviceName: sdb
-      provisionedIops: ""
-      provisionedThroughput: ""
+      nodes: {}  # Per node ID overrides of the role values, e.g. worker-us-central1-a-0: {provisionedIops: 6000}
       type: pd-balanced
+      worker:
+        provisionedIops: ""
+        provisionedThroughput: ""
     diskPrefix: citus
     image:
       pullPolicy: IfNotPresent
