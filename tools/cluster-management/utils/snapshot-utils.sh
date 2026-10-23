@@ -547,15 +547,16 @@ function deleteDisk() {
 }
 
 function getCitusDiskSpec() {
-  local diskName="${1}" diskZone="${2}"
-  local spec diskType provisionedIops provisionedThroughput
+  local diskName="${1}" diskZone="${2}" nodeId="${3}"
+  local spec diskType diskPerformance provisionedIops provisionedThroughput
   spec="$(describeDiskSpec "${diskName}" "${diskZone}")" || exit 1
 
   if [[ -z "${spec}" ]]; then
     log "Disk ${diskName} not found in ${diskZone}; using zfs-manager disk configuration"
     diskType="$(getZfsManagerEnv DISK_TYPE)" || exit 1
-    provisionedIops="$(getZfsManagerEnv DISK_PROVISIONED_IOPS)" || exit 1
-    provisionedThroughput="$(getZfsManagerEnv DISK_PROVISIONED_THROUGHPUT)" || exit 1
+    diskPerformance="$(getZfsManagerEnv DISK_PERFORMANCE)" || exit 1
+    provisionedIops="$(getDiskPerformance "${diskPerformance}" "${nodeId}" provisionedIops)" || exit 1
+    provisionedThroughput="$(getDiskPerformance "${diskPerformance}" "${nodeId}" provisionedThroughput)" || exit 1
     spec="${diskType},${provisionedIops},${provisionedThroughput}"
   fi
 
@@ -678,7 +679,7 @@ function replaceDisks() {
       diskName="${DISK_PREFIX}-${nodeId}-zfs"
       diskZone=$(echo "${nodeId}" | cut -d '-' -f 2-4)
       snapshotName=$(echo "${nodeInfo}" | jq -r '.snapshot[0].name')
-      diskSpec="$(getCitusDiskSpec "${diskName}" "${diskZone}")"
+      diskSpec="$(getCitusDiskSpec "${diskName}" "${diskZone}" "${nodeId}")"
       replaceDiskFromSnapshot "${diskName}" "${diskZone}" "${snapshotName}" "${diskSpec}"
     done
 

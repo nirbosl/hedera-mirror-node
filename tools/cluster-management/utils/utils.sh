@@ -857,6 +857,16 @@ function describeDiskSpec() {
   exit 1
 }
 
+function getDiskPerformance() {
+  local diskPerformance="${1}" nodeId="${2}" field="${3}" role="coordinator"
+  if [[ "${nodeId}" == *"worker"* ]]; then
+    role="worker"
+  fi
+
+  jq -r --arg NODE_ID "${nodeId}" --arg ROLE "${role}" --arg FIELD "${field}" '
+    [.nodes[$NODE_ID][$FIELD]?, .[$ROLE][$FIELD]?] | map(select(. != null and . != "") | tostring) | first // ""
+  ' <<<"${diskPerformance}"
+}
 function getDiskSpecArgs() {
   local diskSpec="${1}" sizeGb="${2:-}"
   local diskType provisionedIops provisionedThroughput
