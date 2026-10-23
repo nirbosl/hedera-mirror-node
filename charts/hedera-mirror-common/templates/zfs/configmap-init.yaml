@@ -198,6 +198,11 @@ data:
         return 0
       fi
 
+      if ! chroot "${ROOT_MOUNT_DIR}" /bin/bash -c "zpool list \"${POOL}\"" &>/dev/null; then
+        log "Pool ${POOL} is not imported yet; skipping pool expand for now"
+        return 0
+      fi
+
       if ! forceSizeScanWithRetry; then
         log "Pool did not expand into available disk capacity; refusing to continue"
         return 1
