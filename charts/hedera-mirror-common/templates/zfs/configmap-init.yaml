@@ -507,9 +507,18 @@ data:
 
         udevadm settle || true
 
+        # Import by the partition path zpool online -e matches for ZFS_DEVICE
+        if [[ "${ZFS_DEVICE}" == /dev/disk/* ]]; then
+          ZFS_PARTITION="${ZFS_DEVICE}-part1"
+        elif [[ "${ZFS_DEVICE}" == *[0-9] ]]; then
+          ZFS_PARTITION="${ZFS_DEVICE}p1"
+        else
+          ZFS_PARTITION="${ZFS_DEVICE}1"
+        fi
+
         if zfs list | grep -q "${POOL}"; then
           echo "Found existing pool. Skipping creation"
-        elif zpool import -f "${POOL}"; then
+        elif zpool import -f -d "${ZFS_PARTITION}" "${POOL}" || zpool import -f "${POOL}"; then
           echo "Successfully imported pool"
         elif zpool create -o autoexpand=on "${POOL}" "${ZFS_DEVICE}"; then
           echo "Successfully created pool"
