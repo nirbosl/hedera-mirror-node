@@ -568,15 +568,26 @@ function getCitusDiskSpec() {
   echo "${diskType},${provisionedIops},${provisionedThroughput}"
 }
 
+function getSnapshotDiskSpecArgs() {
+  local diskSpec="${1}" snapshotName="${2}"
+  local diskSpecArgs snapshotSizeGb
+  diskSpecArgs="$(getDiskSpecArgs "${diskSpec}")"
+  if [[ "${diskSpecArgs}" == *"--provisioned-"* ]]; then
+    snapshotSizeGb="$(gcloud compute snapshots describe "${snapshotName}" \
+                        --project "${GCP_SNAPSHOT_PROJECT}" \
+                        --format='value(diskSizeGb)')"
+    diskSpecArgs="$(getDiskSpecArgs "${diskSpec}" "${snapshotSizeGb}")"
+  fi
+
+  echo "${diskSpecArgs}"
+}
+
 function replaceDiskFromSnapshot() {
-  local diskName="${1}" diskZone="${2}" snapshotName="${3}" diskSpec="${4:-}"
+  local diskName="${1}" diskZone="${2}" snapshotName="${3}" snapshotDiskSpecArgs="${4}"
   local createPidRef="${5:-}"
-  local snapshotFullName snapshotSizeGb diskSpecArgs
+  local snapshotFullName diskSpecArgs
   snapshotFullName="projects/${GCP_SNAPSHOT_PROJECT}/global/snapshots/${snapshotName}"
-  snapshotSizeGb="$(gcloud compute snapshots describe "${snapshotName}" \
-                      --project "${GCP_SNAPSHOT_PROJECT}" \
-                      --format='value(diskSizeGb)')"
-  mapfile -t diskSpecArgs < <(getDiskSpecArgs "${diskSpec}" "${snapshotSizeGb}")
+  mapfile -t diskSpecArgs <<<"${snapshotDiskSpecArgs}"
   deleteDisk "${diskName}" "${diskZone}"
 
   log "Recreating disk ${diskName} using snapshot ${snapshotName} in zone ${diskZone} with ${diskSpecArgs[*]}"
@@ -587,6 +598,19 @@ function replaceDiskFromSnapshot() {
   fi
 }
 
+function prepareMinioDiskReplacement() {
+  if [[  "${KEEP_SNAPSHOTS}" != "true" ]]; then
+    return
+  fi
+
+  local diskSpec
+  MINIO_DISK_NAME="$(getMinioDiskName)"
+  MINIO_DISK_ZONE="$(getZoneFromPv "${MINIO_DISK_NAME}")"
+  diskSpec="$(describeDiskSpec "${MINIO_DISK_NAME}" "${MINIO_DISK_ZONE}")"
+  MINIO_DISK_SPEC_ARGS="$(getSnapshotDiskSpecArgs "${diskSpec:-pd-ssd,,}" "${MINIO_SNAPSHOT_PREFIX}-${SNAPSHOT_ID}")"
+  log "Will recreate ${MINIO_DISK_NAME} from ${MINIO_SNAPSHOT_PREFIX}-${SNAPSHOT_ID} with $(tr '\n' ' ' <<<"${MINIO_DISK_SPEC_ARGS}")"
+}
+
 function replaceMinioDisk() {
   if [[  "${KEEP_SNAPSHOTS}" != "true" ]]; then
     log "KEEP_SNAPSHOTS is set to false. Skipping MinIO restore from snapshot"
@@ -594,12 +618,8 @@ function replaceMinioDisk() {
   fi
 
   scaleDeployment "${COMMON_NAMESPACE}" 0 "${MINIO_RESOURCE_SELECTOR}"
-  local diskName diskZone snapshotName diskSpec bgPid
-  diskName="$(getMinioDiskName)"
-  diskZone="$(getZoneFromPv "${diskName}")"
-  snapshotName="${MINIO_SNAPSHOT_PREFIX}-${SNAPSHOT_ID}"
-  diskSpec="$(describeDiskSpec "${diskName}" "${diskZone}")"
-  replaceDiskFromSnapshot "${diskName}" "${diskZone}" "${snapshotName}" "${diskSpec:-pd-ssd,,}" bgPid
+  local bgPid
+  replaceDiskFromSnapshot "${MINIO_DISK_NAME}" "${MINIO_DISK_ZONE}" "${MINIO_SNAPSHOT_PREFIX}-${SNAPSHOT_ID}" "${MINIO_DISK_SPEC_ARGS}" bgPid
   log "Waiting for MinIO disk to be created"
   wait "${bgPid}"
   scaleDeployment "${COMMON_NAMESPACE}" 1 "${MINIO_RESOURCE_SELECTOR}"
@@ -671,6 +691,22 @@ function renameZfsVolumes() {
 }
 
 function replaceDisks() {
+  local -A diskSpecArgsByNodeId=()
+  if [[ "${REPLACE_DISKS}" == "true" ]]; then
+    for nodeId in "${UNIQUE_NODE_IDS[@]}"; do
+      local nodeInfo diskName diskZone snapshotName diskSpec
+
+      nodeInfo=$(echo "${NODE_ID_MAP}" | jq -r --arg NODE_ID "${nodeId}" '.[$NODE_ID]')
+      diskName="${DISK_PREFIX}-${nodeId}-zfs"
+      diskZone=$(echo "${nodeId}" | cut -d '-' -f 2-4)
+      snapshotName=$(echo "${nodeInfo}" | jq -r '.snapshot[0].name')
+      diskSpec="$(getCitusDiskSpec "${diskName}" "${diskZone}" "${nodeId}")"
+      diskSpecArgsByNodeId["${nodeId}"]="$(getSnapshotDiskSpecArgs "${diskSpec}" "${snapshotName}")"
+      log "Will recreate ${diskName} from ${snapshotName} with $(tr '\n' ' ' <<<"${diskSpecArgsByNodeId["${nodeId}"]}")"
+    done
+    prepareMinioDiskReplacement
+  fi
+
   prepareCitusDisksForReplacement
   if [[ "${REPLACE_DISKS}" == "true" ]]; then
     log "Will delete disks ${DISK_PREFIX}-(${UNIQUE_NODE_IDS[*]})-zfs"
@@ -678,14 +714,13 @@ function replaceDisks() {
     kubectl delete sgshardedbackups.stackgres.io --all -A
     resizeCitusNodePools 0
     for nodeId in "${UNIQUE_NODE_IDS[@]}"; do
-      local nodeInfo diskName diskZone snapshotName snapshotFullName diskSpec
+      local nodeInfo diskName diskZone snapshotName
 
       nodeInfo=$(echo "${NODE_ID_MAP}" | jq -r --arg NODE_ID "${nodeId}" '.[$NODE_ID]')
       diskName="${DISK_PREFIX}-${nodeId}-zfs"
       diskZone=$(echo "${nodeId}" | cut -d '-' -f 2-4)
       snapshotName=$(echo "${nodeInfo}" | jq -r '.snapshot[0].name')
-      diskSpec="$(getCitusDiskSpec "${diskName}" "${diskZone}" "${nodeId}")"
-      replaceDiskFromSnapshot "${diskName}" "${diskZone}" "${snapshotName}" "${diskSpec}"
+      replaceDiskFromSnapshot "${diskName}" "${diskZone}" "${snapshotName}" "${diskSpecArgsByNodeId["${nodeId}"]}"
     done
 
     replaceMinioDisk
@@ -852,6 +887,9 @@ GCP_K8S_TARGET_CLUSTER_REGION="${GCP_K8S_TARGET_CLUSTER_REGION:-}"
 GCP_SNAPSHOT_PROJECT="${GCP_SNAPSHOT_PROJECT:-}"
 GCP_TARGET_PROJECT="${GCP_TARGET_PROJECT:-}"
 KEEP_SNAPSHOTS="${KEEP_SNAPSHOTS:-false}"
+MINIO_DISK_NAME=
+MINIO_DISK_SPEC_ARGS=
+MINIO_DISK_ZONE=
 MINIO_SNAPSHOT_PREFIX="${MINIO_SNAPSHOT_PREFIX:-minio-sg-snapshot}"
 MINIO_RESOURCE_SELECTOR="${MINIO_RESOURCE_SELECTOR:-app.kubernetes.io/component=minio}"
 REPLACE_DISKS="${REPLACE_DISKS:-true}"
