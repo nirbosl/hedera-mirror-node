@@ -526,11 +526,18 @@ data:
           echo "Found existing pool. Skipping creation"
         elif zpool import -f -d "${ZFS_PARTITION}" "${POOL}" || zpool import -f "${POOL}"; then
           echo "Successfully imported pool"
-        elif zpool create -o autoexpand=on "${POOL}" "${ZFS_DEVICE}"; then
-          echo "Successfully created pool"
         else
-          echo "Unable to create pool. Manual intervention necessary"
-          exit 1
+          # blkid exits 2 only when the disk has no partition table or signature
+          blkid -p "${ZFS_DEVICE}"
+          if [[ $? -ne 2 ]]; then
+            echo "${ZFS_DEVICE} is not blank and has no importable pool ${POOL}. Manual intervention necessary"
+            exit 1
+          elif zpool create -o autoexpand=on "${POOL}" "${ZFS_DEVICE}"; then
+            echo "Successfully created pool"
+          else
+            echo "Unable to create pool. Manual intervention necessary"
+            exit 1
+          fi
         fi
 
         ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" | grep -A1 -E '^\s*cache\s*$' | grep -v cache | awk '{print $1;}')"
