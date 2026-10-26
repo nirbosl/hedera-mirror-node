@@ -199,8 +199,8 @@ data:
       fi
 
       if ! chroot "${ROOT_MOUNT_DIR}" /bin/bash -c "zpool list \"${POOL}\"" &>/dev/null; then
-        log "Pool ${POOL} is not imported yet; skipping pool expand for now"
-        return 0
+        log "Pool ${POOL} is not imported; unable to expand it"
+        return 1
       fi
 
       if ! forceSizeScanWithRetry; then
@@ -487,7 +487,8 @@ data:
       else
         log "${DISK_NAME} already exists for ${CITUS_ROLE}"
         raiseDiskPerformance
-        growDiskToSizeGb "${DISK_SIZE}"
+        # setupZFSPool expands the pool after import and autogrow retries resizes
+        growDiskToSizeGb "${DISK_SIZE}" || log "Unable to grow ${DISK_NAME} to ${DISK_SIZE} during startup; continuing"
       fi
 
       ensureDiskAttached
