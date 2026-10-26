@@ -8,8 +8,8 @@ source ./utils/utils.sh
 
 requireCommand gcloud
 
-HYPERDISK_ONLY_FAMILIES=(c4 c4d n4 n4d)
-NON_COMPACT_FAMILIES=(e2 n4 n4d)
+COMPACT_FAMILIES=(a2 a3 a4 c2 c2d c3 c3d c4 c4d g2 g4 h3 h4d n2 n2d)
+HYPERDISK_ONLY_FAMILIES=(c4 c4a c4d c4n h4d m4 n4 n4a n4d x4)
 
 GCP_TARGET_PROJECT="$(readUserInput "Enter GCP Project for target: ")"
 if [[ -z "${GCP_TARGET_PROJECT}" ]]; then
@@ -65,7 +65,7 @@ else
     fi
 
     POOL_PLACEMENT_TYPE="$(echo "${POOL_JSON}" | jq -r '.placementPolicy.type // ""')"
-    if [[ "${POOL_PLACEMENT_TYPE}" == "COMPACT" && " ${NON_COMPACT_FAMILIES[*]} " == *" ${MACHINE_FAMILY} "* ]]; then
+    if [[ "${POOL_PLACEMENT_TYPE}" == "COMPACT" && " ${COMPACT_FAMILIES[*]} " != *" ${MACHINE_FAMILY} "* ]]; then
       log "Machine type ${MACHINE_TYPE} (${MACHINE_FAMILY}) does not support the compact placement used by pool ${pool}. Choose a machine family that supports compact placement or remove the pool's placement policy first; no changes were made. Exiting"
       exit 1
     fi
