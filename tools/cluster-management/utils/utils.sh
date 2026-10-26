@@ -831,7 +831,7 @@ function getDiskPrefix() {
 function getZfsManagerEnv() {
   local name="${1}"
   kubectl get daemonsets -n "${COMMON_NAMESPACE}" -l 'app=zfs-manager' -o json |
-    jq -r --arg NAME "${name}" '.items[0].spec.template.spec.containers[0].env[] | select (.name == $NAME) | .value'
+    jq -r --arg NAME "${name}" '.items[0].spec.template.spec.containers[0].env[] | select (.name == $NAME) | .value // ""'
 }
 
 function describeDiskSpec() {
