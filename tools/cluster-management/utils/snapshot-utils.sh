@@ -550,17 +550,22 @@ function getCitusDiskSpec() {
   local diskName="${1}" diskZone="${2}" nodeId="${3}"
   local spec diskType diskPerformance provisionedIops provisionedThroughput
   spec="$(describeDiskSpec "${diskName}" "${diskZone}")" || exit 1
+  diskType="$(getZfsManagerEnv DISK_TYPE)" || exit 1
 
-  if [[ -z "${spec}" ]]; then
-    log "Disk ${diskName} not found in ${diskZone}; using zfs-manager disk configuration"
-    diskType="$(getZfsManagerEnv DISK_TYPE)" || exit 1
-    diskPerformance="$(getZfsManagerEnv DISK_PERFORMANCE)" || exit 1
-    provisionedIops="$(getDiskPerformance "${diskPerformance}" "${nodeId}" provisionedIops)" || exit 1
-    provisionedThroughput="$(getDiskPerformance "${diskPerformance}" "${nodeId}" provisionedThroughput)" || exit 1
-    spec="${diskType},${provisionedIops},${provisionedThroughput}"
+  if [[ -n "${spec}" && ( -z "${diskType}" || "${spec%%,*}" == "${diskType}" ) ]]; then
+    echo "${spec}"
+    return 0
   fi
 
-  echo "${spec}"
+  if [[ -n "${spec}" ]]; then
+    log "Disk ${diskName} is ${spec%%,*} but zfs-manager uses ${diskType}; using zfs-manager disk configuration"
+  else
+    log "Disk ${diskName} not found in ${diskZone}; using zfs-manager disk configuration"
+  fi
+  diskPerformance="$(getZfsManagerEnv DISK_PERFORMANCE)" || exit 1
+  provisionedIops="$(getDiskPerformance "${diskPerformance}" "${nodeId}" provisionedIops)" || exit 1
+  provisionedThroughput="$(getDiskPerformance "${diskPerformance}" "${nodeId}" provisionedThroughput)" || exit 1
+  echo "${diskType},${provisionedIops},${provisionedThroughput}"
 }
 
 function replaceDiskFromSnapshot() {
