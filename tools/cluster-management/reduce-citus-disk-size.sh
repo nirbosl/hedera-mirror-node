@@ -445,7 +445,7 @@ EOF
     log "Importing pool ${POOL_NAME} from ${DISK_PARTITION_PATH}"
     kubectl exec -it -n "${COMMON_NAMESPACE}" "${DAEMONSET_POD}" -- bash -c \
     "chroot /node-fs /bin/bash -c \
-    'udevadm settle && \
+    'udevadm settle || true; \
      zpool import -d ${DISK_PARTITION_PATH} ${POOL_NAME} && \
      zpool upgrade ${POOL_NAME}'"
     kubectl delete -n "${COMMON_NAMESPACE}" daemonset "${INSTANCE_NAME}"
