@@ -14,4 +14,5 @@ resources:
   - helmrepository.yaml
   - namespace.yaml
 #  - podmonitor.yaml
+  - storageclass.yaml
 
