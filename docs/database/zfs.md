@@ -77,15 +77,23 @@ zfs:
 
 - `provisionedIops` and `provisionedThroughput` (MiB/s) are set per role, and `nodes` overrides them for a single node
   by its ZFS node ID (the `<role>-<zone>-<index>` part of the disk name). Unset fields fall back to the role value.
-- If both are empty, Compute Engine applies size-based defaults that can be considerably more expensive on large disks.
-  They are only passed for `hyperdisk-*` disk types.
-- Values are applied when a disk is created. For an existing disk, each value is only ever raised to the configured one
-  when the zfs-manager pod starts, never lowered. Compute Engine allows one change of each every four hours.
+- Each field that is left empty gets the Compute Engine size-based default, which can be considerably more expensive on
+  large disks, so set both.
+- `provisionedIops` is only supported by `hyperdisk-balanced`, `hyperdisk-balanced-high-availability` and
+  `hyperdisk-extreme`, and `provisionedThroughput` by `hyperdisk-balanced`, `hyperdisk-balanced-high-availability`,
+  `hyperdisk-ml` and `hyperdisk-throughput`. Setting an unsupported field fails the chart render. Both are ignored for
+  `pd-*` disk types.
+- For `hyperdisk-balanced`, throughput must be between `provisionedIops / 256` (at least 140) and `provisionedIops / 4`,
+  and IOPS can be at most 500 per GiB of disk size. Values outside these limits fail when the disk is created or raised.
+- `type` and the performance values are applied when a disk is created. An existing disk keeps its type, and each of its
+  performance values is only ever raised to the configured one when the zfs-manager pod starts, never lowered.
+  Compute Engine allows one change of each every four hours.
 - Hyperdisk size can only be changed twice per four hours, so consider a larger `zfs.autoGrow.maxStepGb`.
 - The disk is attached with device name `zfs.init.disk.deviceName` (default `sdb`) and resolved through
-  `/dev/disk/by-id/google-<deviceName>` when `/dev/<deviceName>` does not exist.
-- Other persistent volumes in the charts (e.g. `minio.persistence.storageClass`) must also use a StorageClass that
-  provisions Hyperdisk.
+  `/dev/disk/by-id/google-<deviceName>` when `/dev/<deviceName>` does not exist. Do not change it on an existing
+  cluster, since existing disks stay attached under the previous name.
+- Other persistent volumes in the charts (e.g. `minio.persistence.storageClass` and
+  `testkube.test.artifactStorageClassName`) must also use a StorageClass that provisions Hyperdisk.
 
 ## Install
 
