@@ -870,16 +870,18 @@ function getDiskPerformance() {
 function getDiskSpecArgs() {
   local diskSpec="${1}" sizeGb="${2:-}"
   local diskType provisionedIops provisionedThroughput
+  local performanceArgs=()
   IFS=',' read -r diskType provisionedIops provisionedThroughput <<<"${diskSpec}"
 
   echo "--type=${diskType:-pd-balanced}"
-  if [[ "${diskType}" == hyperdisk-* && ( -n "${provisionedIops}" || -n "${provisionedThroughput}" ) ]]; then
-    if [[ -n "${provisionedIops}" ]]; then
-      echo "--provisioned-iops=${provisionedIops}"
-    fi
-    if [[ -n "${provisionedThroughput}" ]]; then
-      echo "--provisioned-throughput=${provisionedThroughput}"
-    fi
+  if [[ -n "${provisionedIops}" && "${IOPS_DISK_TYPES}" == *" ${diskType} "* ]]; then
+    performanceArgs+=("--provisioned-iops=${provisionedIops}")
+  fi
+  if [[ -n "${provisionedThroughput}" && "${THROUGHPUT_DISK_TYPES}" == *" ${diskType} "* ]]; then
+    performanceArgs+=("--provisioned-throughput=${provisionedThroughput}")
+  fi
+  if [[ ${#performanceArgs[@]} -gt 0 ]]; then
+    printf '%s\n' "${performanceArgs[@]}"
     if [[ -n "${sizeGb}" ]]; then
       echo "--size=${sizeGb}GB"
     fi
@@ -1181,10 +1183,12 @@ COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
 DISK_PREFIX=
 FLUX_RECONCILE_HR_TIMEOUT="${FLUX_RECONCILE_HR_TIMEOUT:-60m}"
 HELM_RELEASE_NAME="${HELM_RELEASE_NAME:-mirror}"
+IOPS_DISK_TYPES=" hyperdisk-balanced hyperdisk-balanced-high-availability hyperdisk-extreme "
 KUSTOMIZATION_NAME="${KUSTOMIZATION_NAME:-flux-system}"
 KUSTOMIZATION_NAMESPACE="${KUSTOMIZATION_NAMESPACE:-flux-system}"
 PATRONI_MASTER_ROLE="${PATRONI_MASTER_ROLE:-Leader}"
 PAUSE_CLUSTER="${PAUSE_CLUSTER:-true}"
+THROUGHPUT_DISK_TYPES=" hyperdisk-balanced hyperdisk-balanced-high-availability hyperdisk-ml hyperdisk-throughput "
 ZFS_POOL_NAME="${ZFS_POOL_NAME:-zfspv-pool}"
 WAIT_FOR_STREAM_SYNC="${WAIT_FOR_STREAM_SYNC:-true}"
 
