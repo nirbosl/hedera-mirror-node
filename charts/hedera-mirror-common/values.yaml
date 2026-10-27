@@ -5,6 +5,9 @@ global:
   security:
     allowInsecureImages: true
 
+hyperdiskStorageClass:
+  enabled: true  # Non-default hyperdisk-balanced StorageClass for GKE machine families that only support Hyperdisk
+
 labels: {}
 
 loki:
