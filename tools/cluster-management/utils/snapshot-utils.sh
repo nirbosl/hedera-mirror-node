@@ -139,6 +139,20 @@ function getMinioDiskName() {
   echo "${minioPvNames[0]}"
 }
 
+function waitForMinioPvcBound() {
+  local deadline=$((SECONDS+900)) bound
+  until bound="$(kubectl_common get pvc -l app.kubernetes.io/component=minio \
+                   -o jsonpath='{range .items[?(@.status.phase=="Bound")]}{.spec.volumeName}{"\n"}{end}')" &&
+        [[ -n "${bound}" ]]; do
+    if ((SECONDS >= deadline)); then
+      log "Timed out waiting for the MinIO PVC to be bound"
+      exit 1
+    fi
+    log "Waiting for the MinIO PVC to be bound"
+    sleep 5
+  done
+}
+
 function getZoneFromPv() {
   local pv="$1"
   if [[ -z "$pv" ]]; then
@@ -604,6 +618,7 @@ function prepareMinioDiskReplacement() {
   fi
 
   local diskSpec
+  waitForMinioPvcBound
   MINIO_DISK_NAME="$(getMinioDiskName)"
   MINIO_DISK_ZONE="$(getZoneFromPv "${MINIO_DISK_NAME}")"
   diskSpec="$(describeDiskSpec "${MINIO_DISK_NAME}" "${MINIO_DISK_ZONE}")"
