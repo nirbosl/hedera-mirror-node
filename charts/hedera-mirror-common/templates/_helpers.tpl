@@ -84,12 +84,11 @@ Validate the ZFS disk performance values and render them as JSON for zfs-manager
 {{- range $nodeId, $values := $nodes -}}
 {{- $_ := set $entries (printf "nodes.%s" $nodeId) $values -}}
 {{- end -}}
-{{- $supportedTypes := dict "provisionedIops" (list "hyperdisk-balanced" "hyperdisk-balanced-high-availability" "hyperdisk-extreme") "provisionedThroughput" (list "hyperdisk-balanced" "hyperdisk-balanced-high-availability" "hyperdisk-ml" "hyperdisk-throughput") -}}
 {{- range $name, $values := $entries -}}
 {{- if not (or (kindIs "invalid" $values) (kindIs "map" $values)) -}}
 {{- fail (printf "zfs.init.disk.%s must be a map of performance values" $name) -}}
 {{- end -}}
-{{- range $field, $types := $supportedTypes -}}
+{{- range $field := list "provisionedIops" "provisionedThroughput" -}}
 {{- $raw := get ($values | default dict) $field -}}
 {{- $value := "" -}}
 {{- if kindIs "string" $raw -}}
@@ -105,8 +104,8 @@ Validate the ZFS disk performance values and render them as JSON for zfs-manager
 {{- if and $value (not (regexMatch "^[1-9][0-9]*$" $value)) -}}
 {{- fail (printf "zfs.init.disk.%s.%s must be empty or a positive whole number" $name $field) -}}
 {{- end -}}
-{{- if and $value (hasPrefix "hyperdisk-" $disk.type) (not (has $disk.type $types)) -}}
-{{- fail (printf "zfs.init.disk.%s.%s is not supported for disk type %s" $name $field $disk.type) -}}
+{{- if and $value (ne $disk.type "hyperdisk-balanced") -}}
+{{- fail (printf "zfs.init.disk.%s.%s is only supported for disk type hyperdisk-balanced" $name $field) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

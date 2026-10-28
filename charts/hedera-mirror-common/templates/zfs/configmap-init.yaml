@@ -40,8 +40,6 @@ data:
     ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/node}"
 
     # Constants
-    IOPS_DISK_TYPES=" hyperdisk-balanced hyperdisk-balanced-high-availability hyperdisk-extreme "
-    THROUGHPUT_DISK_TYPES=" hyperdisk-balanced hyperdisk-balanced-high-availability hyperdisk-ml hyperdisk-throughput "
     NODE_ID_LABEL="openebs.io/nodeid"
     ROLE_LABEL="citus-role"
     ENV_FILE="${ROOT_MOUNT_DIR}/etc/environment"
@@ -448,14 +446,14 @@ data:
       fi
 
       IFS=',' read -r diskType currentIops currentThroughput <<<"${current}"
-      if [[ "${IOPS_DISK_TYPES}${THROUGHPUT_DISK_TYPES}" != *" ${diskType} "* ]]; then
+      if [[ "${diskType}" != "hyperdisk-balanced" ]]; then
         return 0
       fi
 
-      if [[ -n "${DISK_PROVISIONED_IOPS}" && "${IOPS_DISK_TYPES}" == *" ${diskType} "* ]] && (( ${currentIops:-0} < DISK_PROVISIONED_IOPS )); then
+      if [[ -n "${DISK_PROVISIONED_IOPS}" ]] && (( ${currentIops:-0} < DISK_PROVISIONED_IOPS )); then
         updateArgs+=(--provisioned-iops="${DISK_PROVISIONED_IOPS}")
       fi
-      if [[ -n "${DISK_PROVISIONED_THROUGHPUT}" && "${THROUGHPUT_DISK_TYPES}" == *" ${diskType} "* ]] && (( ${currentThroughput:-0} < DISK_PROVISIONED_THROUGHPUT )); then
+      if [[ -n "${DISK_PROVISIONED_THROUGHPUT}" ]] && (( ${currentThroughput:-0} < DISK_PROVISIONED_THROUGHPUT )); then
         updateArgs+=(--provisioned-throughput="${DISK_PROVISIONED_THROUGHPUT}")
       fi
 
@@ -480,10 +478,10 @@ data:
 
       if [[ -z "${actual}" ]]; then
         local createArgs=(--size="${DISK_SIZE}" --zone="${ZONE}" --type="${DISK_TYPE}" --quiet)
-        if [[ -n "${DISK_PROVISIONED_IOPS}" && "${IOPS_DISK_TYPES}" == *" ${DISK_TYPE} "* ]]; then
+        if [[ -n "${DISK_PROVISIONED_IOPS}" ]]; then
           createArgs+=(--provisioned-iops="${DISK_PROVISIONED_IOPS}")
         fi
-        if [[ -n "${DISK_PROVISIONED_THROUGHPUT}" && "${THROUGHPUT_DISK_TYPES}" == *" ${DISK_TYPE} "* ]]; then
+        if [[ -n "${DISK_PROVISIONED_THROUGHPUT}" ]]; then
           createArgs+=(--provisioned-throughput="${DISK_PROVISIONED_THROUGHPUT}")
         fi
         log "Creating ${DISK_NAME} for ${CITUS_ROLE} with ${createArgs[*]}"

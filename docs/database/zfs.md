@@ -79,10 +79,8 @@ zfs:
   by its ZFS node ID (the `<role>-<zone>-<index>` part of the disk name). Unset fields fall back to the role value.
 - Each field that is left empty gets the Compute Engine size-based default, which can be considerably more expensive on
   large disks, so set both.
-- `provisionedIops` is only supported by `hyperdisk-balanced`, `hyperdisk-balanced-high-availability` and
-  `hyperdisk-extreme`, and `provisionedThroughput` by `hyperdisk-balanced`, `hyperdisk-balanced-high-availability`,
-  `hyperdisk-ml` and `hyperdisk-throughput`. Setting an unsupported field fails the chart render. Both are ignored for
-  `pd-*` disk types.
+- `provisionedIops` and `provisionedThroughput` are only supported with `type: hyperdisk-balanced`. Setting either with
+  another type fails the chart render.
 - For `hyperdisk-balanced`, throughput must be between `provisionedIops / 256` (at least 140) and `provisionedIops / 4`,
   and IOPS can be at most 500 per GiB of disk size. Values outside these limits fail when the disk is created or raised.
 - `type` and the performance values are applied when a disk is created. An existing disk keeps its type, and each of its
