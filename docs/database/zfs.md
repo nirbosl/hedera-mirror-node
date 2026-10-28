@@ -84,8 +84,9 @@ zfs:
 - For `hyperdisk-balanced`, throughput must be between `provisionedIops / 256` (at least 140) and `provisionedIops / 4`,
   and IOPS can be at most 500 per GiB of disk size. Values outside these limits fail when the disk is created or raised.
 - `type` and the performance values are applied when a disk is created. An existing disk keeps its type, and each of its
-  performance values is only ever raised to the configured one when the zfs-manager pod starts, never lowered.
-  Compute Engine allows one change of each every four hours.
+  performance values is only ever raised to the configured one, never lowered. zfs-manager checks this when it starts
+  and then every `zfs.autoGrow.intervalSeconds`, retrying failed raises. Compute Engine allows one change of each every
+  four hours.
 - Hyperdisk size can only be changed twice per four hours, so consider a larger `zfs.autoGrow.maxStepGb`.
 - The disk is attached with the Compute Engine device name `zfs.init.disk.deviceName` (default `sdb`) and found through
   `/dev/disk/by-id/google-<deviceName>` or `/dev/disk/by-id/scsi-0Google_PersistentDisk_<deviceName>`. When that link

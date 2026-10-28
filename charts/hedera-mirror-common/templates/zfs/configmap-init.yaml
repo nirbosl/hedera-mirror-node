@@ -203,8 +203,8 @@ data:
       fi
 
       if ! chroot "${ROOT_MOUNT_DIR}" /bin/bash -c "zpool list \"${POOL}\"" &>/dev/null; then
-        log "Pool ${POOL} is not imported; unable to expand it"
-        return 1
+        log "Pool ${POOL} is not imported yet; setupZFSPool expands it after import"
+        return 0
       fi
 
       if ! forceSizeScanWithRetry; then
@@ -489,8 +489,7 @@ data:
       else
         log "${DISK_NAME} already exists for ${CITUS_ROLE}"
         raiseDiskPerformance
-        # setupZFSPool expands the pool after import and autogrow retries resizes
-        growDiskToSizeGb "${DISK_SIZE}" || log "Unable to grow ${DISK_NAME} to ${DISK_SIZE} during startup; continuing"
+        growDiskToSizeGb "${DISK_SIZE}"
       fi
 
       ensureDiskAttached
@@ -1019,6 +1018,7 @@ data:
     log "Starting disk autogrow loop: interval=${DISK_AUTOGROW_INTERVAL_SECONDS}s, threshold=${DISK_AUTOGROW_THRESHOLD_PERCENT}%, maxStepGb=${DISK_AUTOGROW_MAX_STEP_GB}GB, percentStep=${DISK_AUTOGROW_PERCENT}%"
 
     while true; do
+      raiseDiskPerformance
       checkAndGrowDatasets || log "checkAndGrowDatasets failed. Will retry after ${DISK_AUTOGROW_INTERVAL_SECONDS}s"
       sleep "${DISK_AUTOGROW_INTERVAL_SECONDS}"
     done
