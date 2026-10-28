@@ -515,7 +515,8 @@ data:
 
         udevadm settle || true
 
-        # Import by the partition path zpool online -e matches for ZFS_DEVICE
+        # A plain import records whichever path it finds first, which may not be ZFS_DEVICE's partition (like after a restore).
+        # zpool online -e only matches the recorded path, so import from the partition path it expects
         if [[ "${ZFS_DEVICE}" == /dev/disk/* ]]; then
           ZFS_PARTITION="${ZFS_DEVICE}-part1"
         elif [[ "${ZFS_DEVICE}" == *[0-9] ]]; then
