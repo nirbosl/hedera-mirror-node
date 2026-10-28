@@ -89,9 +89,11 @@ zfs:
   performance values is only ever raised to the configured one when the zfs-manager pod starts, never lowered.
   Compute Engine allows one change of each every four hours.
 - Hyperdisk size can only be changed twice per four hours, so consider a larger `zfs.autoGrow.maxStepGb`.
-- The disk is attached with device name `zfs.init.disk.deviceName` (default `sdb`) and resolved through
-  `/dev/disk/by-id/google-<deviceName>` when `/dev/<deviceName>` does not exist. Do not change it on an existing
-  cluster, since existing disks stay attached under the previous name.
+- The disk is attached with the Compute Engine device name `zfs.init.disk.deviceName` (default `sdb`) and found through
+  `/dev/disk/by-id/google-<deviceName>` or `/dev/disk/by-id/scsi-0Google_PersistentDisk_<deviceName>`. When that link
+  points to `/dev/<deviceName>`, as on N2 nodes, zfs-manager uses `/dev/<deviceName>`, the path existing pools were
+  created with. Do not change the device name on an existing cluster, since existing disks stay attached under the
+  previous name.
 - Other persistent volumes in the charts (e.g. `minio.persistence.storageClass` and
   `testkube.test.artifactStorageClassName`) must also use a StorageClass that provisions Hyperdisk.
 

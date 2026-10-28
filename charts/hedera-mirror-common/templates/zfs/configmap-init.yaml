@@ -66,12 +66,16 @@ data:
     }
 
     function resolveDiskDevice() {
-      local candidate
-      for candidate in "/dev/${DISK_DEVICE_NAME}" \
-                       "/dev/disk/by-id/google-${DISK_DEVICE_NAME}" \
-                       "/dev/disk/by-id/scsi-0Google_PersistentDisk_${DISK_DEVICE_NAME}"; do
-        if chroot "${ROOT_MOUNT_DIR}" /bin/bash -c "test -b \"${candidate}\"" &>/dev/null; then
-          echo "${candidate}"
+      local byId device
+      for byId in "/dev/disk/by-id/google-${DISK_DEVICE_NAME}" \
+                  "/dev/disk/by-id/scsi-0Google_PersistentDisk_${DISK_DEVICE_NAME}"; do
+        if device="$(chroot "${ROOT_MOUNT_DIR}" /bin/bash -c "test -b \"${byId}\" && readlink -f \"${byId}\"" 2>/dev/null)"; then
+          # Existing pools record /dev/sdb - keep that path when it is the same disk
+          if [[ "${device}" == "/dev/${DISK_DEVICE_NAME}" ]]; then
+            echo "${device}"
+          else
+            echo "${byId}"
+          fi
           return 0
         fi
       done

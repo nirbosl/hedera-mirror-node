@@ -499,7 +499,7 @@ zfs:
       coordinator:
         provisionedIops: ""
         provisionedThroughput: ""
-      deviceName: sdb
+      deviceName: sdb  # GCE device name the disk is attached with, not the kernel name. Existing disks use sdb
       nodes: {}  # Per node ID overrides of the role values, e.g. worker-us-central1-a-0: {provisionedIops: 6000}
       type: pd-balanced
       worker:
