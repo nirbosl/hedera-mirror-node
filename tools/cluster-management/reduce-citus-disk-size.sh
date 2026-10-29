@@ -21,6 +21,8 @@ NODE_ID_MAP=$(echo -e "${ZFS_VOLUMES}" |
                            }
                          }
                       )|add')
+COPY_PROVISIONED_IOPS="${COPY_PROVISIONED_IOPS:-32768}"
+COPY_PROVISIONED_THROUGHPUT="${COPY_PROVISIONED_THROUGHPUT:-1024}"
 TEMP_DISK_DEVICE="sdc"
 SG_WEBHOOK_FILE="/tmp/sg-webhook-${EPOCH_SECONDS}.yaml"
 WORKER_DEFAULT_SIZE="${WORKER_DEFAULT_SIZE:-300Gi}"
@@ -176,6 +178,45 @@ function getDiskPartitionPath() {
   fi
 }
 
+# Raises hyperdisk-balanced performance for the copy within the disk limits, never below the current values
+function getCopyDiskSpec() {
+  local diskSpec="${1}" sizeGb="${2}"
+  local diskType currentIops currentThroughput iops throughput maxIops minThroughput maxThroughput
+  IFS=',' read -r diskType currentIops currentThroughput <<<"${diskSpec}"
+  if [[ "${diskType}" != "hyperdisk-balanced" ]]; then
+    echo "${diskSpec}"
+    return 0
+  fi
+
+  maxIops=$((sizeGb * 500 < 160000 ? sizeGb * 500 : 160000))
+  iops=$((COPY_PROVISIONED_IOPS < maxIops ? COPY_PROVISIONED_IOPS : maxIops))
+  iops=$((${currentIops:-0} > iops ? currentIops : iops))
+  maxThroughput=$((iops / 4 < 2400 ? iops / 4 : 2400))
+  minThroughput=$(((iops + 255) / 256 > 140 ? (iops + 255) / 256 : 140))
+  throughput=$((COPY_PROVISIONED_THROUGHPUT < maxThroughput ? COPY_PROVISIONED_THROUGHPUT : maxThroughput))
+  throughput=$((${currentThroughput:-0} > throughput ? currentThroughput : throughput))
+  throughput=$((throughput > minThroughput ? throughput : minThroughput))
+  echo "${diskType},${iops},${throughput}"
+}
+
+function raiseDiskPerformance() {
+  local diskName="${1}" diskZone="${2}" diskSpec="${3}" copySpec="${4}"
+  local iops throughput
+  if [[ "${diskSpec}" == "${copySpec}" ]]; then
+    return 0
+  fi
+
+  IFS=',' read -r _ iops throughput <<<"${copySpec}"
+  log "Raising ${diskName} to ${iops} IOPS and ${throughput} MiB/s for the copy"
+  if ! gcloud compute disks update "${diskName}" \
+         --project="${GCP_TARGET_PROJECT}" \
+         --zone="${diskZone}" \
+         --provisioned-iops="${iops}" \
+         --provisioned-throughput="${throughput}"; then
+    log "Unable to raise ${diskName} performance; copying at its current performance"
+  fi
+}
+
 # Runs the zfs snapshot/send/receive chain detached on the node so a local disconnect can't kill it, then polls for completion.
 function copyZfsVolume() {
   local pod="$1" sourcePool="$2" destPool="$3" pvcVolume="$4" compression="$5" recordsize="$6" reservation="$7"
@@ -303,7 +344,8 @@ function reduceDiskSizes() {
     "${DISK_NODE_ID}" )"
     NEW_DISK_NAME="${DISK_NAME}-resize-${EPOCH_SECONDS}"
     DISK_SPEC="$(describeDiskSpec "${DISK_NAME}" "${DISK_ZONE}")"
-    mapfile -t DISK_SPEC_ARGS < <(getDiskSpecArgs "${DISK_SPEC}")
+    COPY_DISK_SPEC="$(getCopyDiskSpec "${DISK_SPEC}" "${DISK_SIZE}")"
+    mapfile -t DISK_SPEC_ARGS < <(getDiskSpecArgs "${COPY_DISK_SPEC}")
     mapfile -t SNAPSHOT_DISK_SPEC_ARGS < <(getDiskSpecArgs "${DISK_SPEC}" "${DISK_SIZE}")
     log "Creating ${NEW_DISK_NAME} with ${DISK_SPEC_ARGS[*]}"
     gcloud compute disks create "${NEW_DISK_NAME}" \
@@ -311,6 +353,7 @@ function reduceDiskSizes() {
                     "${DISK_SPEC_ARGS[@]}" \
                     --size="${DISK_SIZE}GB" \
                     --zone="${DISK_ZONE}"
+    raiseDiskPerformance "${DISK_NAME}" "${DISK_ZONE}" "${DISK_SPEC}" "${COPY_DISK_SPEC}"
     gcloud compute instances attach-disk "${INSTANCE_NAME}" \
     --disk "${NEW_DISK_NAME}" \
     --zone "${DISK_ZONE}" \

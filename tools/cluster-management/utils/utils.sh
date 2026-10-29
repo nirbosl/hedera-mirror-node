@@ -874,10 +874,10 @@ function getDiskSpecArgs() {
   IFS=',' read -r diskType provisionedIops provisionedThroughput <<<"${diskSpec}"
 
   echo "--type=${diskType:-pd-balanced}"
-  if [[ -n "${provisionedIops}" && "${IOPS_DISK_TYPES}" == *" ${diskType} "* ]]; then
+  if [[ "${diskType}" == "hyperdisk-balanced" && -n "${provisionedIops}" ]]; then
     performanceArgs+=("--provisioned-iops=${provisionedIops}")
   fi
-  if [[ -n "${provisionedThroughput}" && "${THROUGHPUT_DISK_TYPES}" == *" ${diskType} "* ]]; then
+  if [[ "${diskType}" == "hyperdisk-balanced" && -n "${provisionedThroughput}" ]]; then
     performanceArgs+=("--provisioned-throughput=${provisionedThroughput}")
   fi
   if [[ ${#performanceArgs[@]} -gt 0 ]]; then
@@ -1183,12 +1183,10 @@ COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
 DISK_PREFIX=
 FLUX_RECONCILE_HR_TIMEOUT="${FLUX_RECONCILE_HR_TIMEOUT:-60m}"
 HELM_RELEASE_NAME="${HELM_RELEASE_NAME:-mirror}"
-IOPS_DISK_TYPES=" hyperdisk-balanced hyperdisk-balanced-high-availability hyperdisk-extreme "
 KUSTOMIZATION_NAME="${KUSTOMIZATION_NAME:-flux-system}"
 KUSTOMIZATION_NAMESPACE="${KUSTOMIZATION_NAMESPACE:-flux-system}"
 PATRONI_MASTER_ROLE="${PATRONI_MASTER_ROLE:-Leader}"
 PAUSE_CLUSTER="${PAUSE_CLUSTER:-true}"
-THROUGHPUT_DISK_TYPES=" hyperdisk-balanced hyperdisk-balanced-high-availability hyperdisk-ml hyperdisk-throughput "
 ZFS_POOL_NAME="${ZFS_POOL_NAME:-zfspv-pool}"
 WAIT_FOR_STREAM_SYNC="${WAIT_FOR_STREAM_SYNC:-true}"
 
