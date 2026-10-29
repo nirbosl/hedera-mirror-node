@@ -144,8 +144,11 @@ function resolveNodeDiskDevice() {
   local attempts=0 devicePath
 
   until devicePath="$(execOnNode "${pod}" \
-    "for candidate in /dev/${deviceName} /dev/disk/by-id/google-${deviceName} /dev/disk/by-id/scsi-0Google_PersistentDisk_${deviceName}; do \
-       if [ -b \"\${candidate}\" ]; then echo \"\${candidate}\"; exit 0; fi; \
+    "for byId in /dev/disk/by-id/google-${deviceName} /dev/disk/by-id/scsi-0Google_PersistentDisk_${deviceName}; do \
+       if [ -b \"\${byId}\" ]; then \
+         if [ \"\$(readlink -f \"\${byId}\")\" = /dev/${deviceName} ]; then echo /dev/${deviceName}; else echo \"\${byId}\"; fi; \
+         exit 0; \
+       fi; \
      done; \
      udevadm settle; \
      exit 1" 2>/dev/null)"; do
